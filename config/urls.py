@@ -21,5 +21,6 @@ urlpatterns = [
     path("api/v1/usage/", include("usage.urls")),
     path("api/v1/reports/", include("reports.urls")),
     path("api/v1/webhooks/", include("webhooks.urls")),
+    path("webhooks/", include(("webhooks.urls", "webhooks"), namespace="public-webhooks")),
     path("api/v1/leads/", include("leads.urls")),
 ]

@@ -16,6 +16,7 @@ class EventName:
     EMAIL_RECEIVED = "email_received"
     SMS_RECEIVED = "sms_received"
     WHATSAPP_RECEIVED = "whatsapp_received"
+    MESSAGE_SENT = "message_sent"
     MESSAGE_STATUS_CHANGED = "message_status_changed"
     CONVERSION = "conversion"
     EXTERNAL_EVENT = "external_event"
@@ -34,6 +35,7 @@ class EventName:
             EMAIL_RECEIVED,
             SMS_RECEIVED,
             WHATSAPP_RECEIVED,
+            MESSAGE_SENT,
             MESSAGE_STATUS_CHANGED,
             CONVERSION,
             EXTERNAL_EVENT,

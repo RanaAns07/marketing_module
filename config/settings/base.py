@@ -178,6 +178,12 @@ SPECTACULAR_SETTINGS = {
     },
     "ENUM_NAME_OVERRIDES": {
         "SubscriptionStatusEnum": "contacts.models.Contact.SubscriptionStatus",
+        "AppointmentStatusEnum": "contacts.models.Appointment.Status",
+        "TaskStatusEnum": "contacts.models.Task.Status",
+        "ChannelConnectionStatusEnum": "integrations.models.ChannelConnection.Status",
+        "BroadcastStatusEnum": "messaging.models.Broadcast.Status",
+        "MessageStatusEnum": "messaging.models.Message.Status",
+        "ChannelEnum": "messaging.models.Channel",
     },
 }
 
@@ -228,6 +234,10 @@ CELERY_BEAT_SCHEDULE = {
     "scan-due-soon-tasks": {
         "task": "contacts.tasks.scan_due_soon_tasks_beat_task",
         "schedule": timedelta(minutes=5),
+    },
+    "claim-due-broadcasts": {
+        "task": "messaging.tasks.claim_due_broadcasts_beat_task",
+        "schedule": timedelta(minutes=1),
     },
 }
 
