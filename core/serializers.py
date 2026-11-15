@@ -6,8 +6,6 @@ from core.models import TenantOwnedModel
 class TenantScopedPrimaryKeyRelatedField(serializers.PrimaryKeyRelatedField):
     def get_queryset(self):
         queryset = self.queryset
-        if isinstance(queryset, ( models_manager := getattr(queryset, "model", None) and queryset )):
-            pass
         model_cls = getattr(queryset, "model", None)
         if model_cls is not None and issubclass(model_cls, TenantOwnedModel):
             return model_cls.objects.all()

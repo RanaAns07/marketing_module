@@ -55,10 +55,6 @@ class SendGridEmailProvider(EmailProvider):
     def _api_key(self) -> str:
         return str(self.credentials.get("api_key") or "").strip()
 
-    def _is_mock_mode(self) -> bool:
-        api_key = self._api_key()
-        return bool(self.credentials.get("mock")) or api_key.startswith(("SG.mock", "mock_", "test_"))
-
     def send(
         self,
         *,
@@ -79,15 +75,6 @@ class SendGridEmailProvider(EmailProvider):
             raise ProviderDispatchError("SendGrid API key is not configured.", is_transient=False)
         if not sender:
             raise ProviderDispatchError("SendGrid sender email identity is not configured.", is_transient=False)
-
-        if self._is_mock_mode():
-            mock_id = f"sg_{uuid.uuid4().hex[:20]}"
-            return ProviderSendResult(
-                provider=self.provider_name,
-                provider_message_id=mock_id,
-                status="sent",
-                raw_response={"mock": True, "x_message_id": mock_id},
-            )
 
         plain_text = text_body or _strip_html(html_body) or subject
         personalization: dict[str, Any] = {"to": [{"email": to_email}]}
@@ -306,7 +293,7 @@ class SendGridEmailProvider(EmailProvider):
             ).decode("utf-8")
             return hmac.compare_digest(expected, signature_b64)
 
-        return True
+        return False
 
     def test_connection(self) -> tuple[bool, str]:
         api_key = self._api_key()
@@ -314,8 +301,6 @@ class SendGridEmailProvider(EmailProvider):
             return False, "Missing SendGrid API key."
         if not self.sender_identity:
             return False, "Missing sender email address."
-        if self._is_mock_mode():
-            return True, "SendGrid connection verified (mock mode)."
         try:
             response = requests.get(
                 f"{_SENDGRID_API_BASE}/scopes",

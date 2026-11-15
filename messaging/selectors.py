@@ -2,7 +2,7 @@ from collections.abc import Mapping
 from datetime import timedelta
 from typing import Any
 import uuid
-from django.db.models import Q, QuerySet
+from django.db.models import QuerySet
 from django.utils import timezone
 from accounts.models import Membership
 from contacts.models import Contact

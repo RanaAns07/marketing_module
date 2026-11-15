@@ -5,7 +5,6 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 from core.context import require_tenant
 from core.exceptions import ApplicationError
-from core.models import Tenant
 from messaging.models import Channel, Message, WhatsAppCategory
 from usage.models import RateCard, UsageRecord
 from usage.selectors import resolve_rate_card

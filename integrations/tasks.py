@@ -20,7 +20,7 @@ from messaging.services import process_inbound_message, process_status_event
 def process_webhook_event_task(self, tenant_id: str, webhook_event_id: str) -> dict[str, Any]:
     with transaction.atomic():
         event = (
-            InboundWebhookEvent.objects.select_for_update()
+            InboundWebhookEvent.objects.select_for_update(of=("self",))
             .select_related("connection")
             .filter(pk=webhook_event_id)
             .first()

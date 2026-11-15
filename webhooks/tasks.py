@@ -4,7 +4,7 @@ from typing import Any
 from celery import shared_task
 from django.utils import timezone
 from core.context import TenantAwareTask, tenant_context
-from webhooks.models import WebhookDelivery
+from webhooks.models import ExternalEvent, WebhookDelivery
 from webhooks.services import (
     MAX_EXTERNAL_EVENT_ATTEMPTS,
     attempt_webhook_delivery,
@@ -64,8 +64,7 @@ def deliver_webhook_task(self, tenant_id: str, delivery_id: str) -> dict[str, An
 def retry_due_webhook_deliveries_beat_task() -> dict[str, Any]:
     now = timezone.now()
     due_rows = list(
-        WebhookDelivery.objects.unscoped()
-        .filter(
+        WebhookDelivery.unscoped_objects.filter(
             status=WebhookDelivery.Status.FAILED,
             next_retry_at__isnull=False,
             next_retry_at__lte=now,
@@ -86,4 +85,20 @@ def retry_due_webhook_deliveries_beat_task() -> dict[str, Any]:
             dispatched += 1
         except Exception:
             pass
-    return {"dispatched": dispatched}
+
+    stale_cutoff = now - timedelta(minutes=5)
+    stale_events = list(
+        ExternalEvent.unscoped_objects.filter(status=ExternalEvent.Status.RECEIVED, created_at__lte=stale_cutoff)
+        .values_list("tenant_id", "id")[:100]
+    )
+    re_enqueued_events = 0
+    for tid, eid in stale_events:
+        tid_str = str(tid)
+        eid_str = str(eid)
+        try:
+            process_external_event_task.apply_async(args=[tid_str, eid_str], queue="webhooks")
+            re_enqueued_events += 1
+        except Exception:
+            pass
+
+    return {"dispatched_deliveries": dispatched, "re_enqueued_events": re_enqueued_events}

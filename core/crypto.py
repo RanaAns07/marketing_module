@@ -6,6 +6,10 @@ from django.conf import settings
 _ENCRYPTED_PREFIX = "enc::v1::"
 
 
+class DecryptionError(Exception):
+    pass
+
+
 def _get_fernet() -> Fernet:
     raw_key = getattr(settings, "FIELD_ENCRYPTION_KEY", "") or ""
     if raw_key:
@@ -31,6 +35,9 @@ def decrypt_value(value: str) -> str:
     if value is None or value == "":
         return value
     if not value.startswith(_ENCRYPTED_PREFIX):
-        return value
+        raise DecryptionError("Value is not encrypted.")
     token = value[len(_ENCRYPTED_PREFIX):]
-    return _get_fernet().decrypt(token.encode("utf-8")).decode("utf-8")
+    try:
+        return _get_fernet().decrypt(token.encode("utf-8")).decode("utf-8")
+    except Exception as exc:
+        raise DecryptionError("Decryption failed.") from exc

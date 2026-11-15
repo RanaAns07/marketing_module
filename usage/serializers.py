@@ -1,10 +1,14 @@
 from rest_framework import serializers
+from core.constants import COST_ESTIMATE_DISCLAIMER
 from core.serializers import TenantScopedSerializer
 from usage.models import RateCard, UsageRecord
 
 
 class UsageRecordSerializer(TenantScopedSerializer):
     message_id = serializers.UUIDField(source="message.id", read_only=True)
+    is_estimate = serializers.BooleanField(default=True, read_only=True)
+    estimate = serializers.BooleanField(default=True, read_only=True)
+    disclaimer = serializers.CharField(default=COST_ESTIMATE_DISCLAIMER, read_only=True)
 
     class Meta:
         model = UsageRecord
@@ -20,6 +24,9 @@ class UsageRecordSerializer(TenantScopedSerializer):
             "total_cost",
             "currency",
             "status",
+            "is_estimate",
+            "estimate",
+            "disclaimer",
             "occurred_at",
             "created_at",
         ]
@@ -54,6 +61,9 @@ class ChannelUsageSummarySerializer(serializers.Serializer):
     bounced_count = serializers.IntegerField()
     estimated_cost = serializers.FloatField()
     currency = serializers.CharField()
+    is_estimate = serializers.BooleanField(default=True, required=False)
+    estimate = serializers.BooleanField(default=True, required=False)
+    disclaimer = serializers.CharField(default=COST_ESTIMATE_DISCLAIMER, required=False)
 
 
 class UsageSummarySerializer(serializers.Serializer):

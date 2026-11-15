@@ -11,6 +11,7 @@ class ApplicationError(APIException):
     default_code = "application_error"
 
     def __init__(self, detail=None, code=None, status_code=None):
+        self.code = code or getattr(self, "default_code", "application_error")
         if status_code is not None:
             self.status_code = status_code
         super().__init__(detail=detail, code=code)

@@ -2,12 +2,11 @@ from datetime import datetime, time, timedelta, timezone as dt_timezone
 from typing import Any
 import uuid
 from django.db import IntegrityError, transaction
-from django.db.models import F, Q
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
 from rest_framework import status
 from accounts.models import Membership, User
-from accounts.services import resolve_tenant_lead_assignee, select_next_round_robin_member
 from automation.models import StepExecution, Workflow, WorkflowEnrollment, WorkflowStep
 from automation.selectors import has_contact_replied_since
 from automation.validators import (
@@ -16,7 +15,7 @@ from automation.validators import (
     resolve_entry_step_key,
     validate_workflow_graph,
 )
-from contacts.models import Activity, Appointment, Contact, CustomFieldDefinition, LeadStatus, Tag
+from contacts.models import Activity, Appointment, Contact, LeadStatus
 from contacts.services import (
     ContactService,
     create_task as create_contact_task,
@@ -1662,7 +1661,7 @@ def execute_action_step(
         }
         channel = channel_map[subtype]
         template = _resolve_template_for_step(cfg, channel)
-        body = str(cfg.get("body") or "")
+        body = str(cfg.get("body") or cfg.get("message_body") or "")
         subject = str(cfg.get("subject") or "")
         idemp_key = f"{enrollment.id}:{step.key}:{enrollment.iteration}"
 

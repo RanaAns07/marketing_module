@@ -85,7 +85,7 @@ def scan_tenant_due_soon_tasks_task(self, tenant_id: str, window_minutes: int | 
 
     with transaction.atomic():
         tasks = list(
-            Task.objects.select_for_update()
+            Task.objects.select_for_update(of=("self",))
             .select_related("assignee", "assignee__user", "contact")
             .filter(
                 status__in=[Task.Status.OPEN, Task.Status.IN_PROGRESS],

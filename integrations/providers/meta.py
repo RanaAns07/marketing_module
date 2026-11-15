@@ -106,10 +106,6 @@ class MetaGraphProvider(MetaLeadAdsProvider):
             hashlib.sha256,
         ).hexdigest()
 
-    def _is_mock_token(self, token_or_code: str) -> bool:
-        val = (token_or_code or "").strip()
-        return val.startswith(("mock_", "test_"))
-
     def _request_graph(
         self,
         method: str,
@@ -197,17 +193,6 @@ class MetaGraphProvider(MetaLeadAdsProvider):
         if not clean_code:
             raise ProviderDispatchError("OAuth authorization code is required.", is_transient=False)
 
-        if self._is_mock_token(clean_code):
-            now = datetime.now(timezone.utc)
-            return NormalizedMetaToken(
-                access_token=f"mock_long_lived_{clean_code}",
-                expires_at=now + timedelta(days=60),
-                meta_user_id="mock_meta_user_1",
-                meta_user_name="Meta Business User",
-                is_valid=True,
-                scopes=list(DEFAULT_META_SCOPES),
-            )
-
         if not self.app_id or not self.app_secret:
             raise ProviderDispatchError(
                 "META_APP_ID and META_APP_SECRET must be configured.",
@@ -265,20 +250,6 @@ class MetaGraphProvider(MetaLeadAdsProvider):
         if not clean_token:
             return NormalizedMetaToken(access_token="", is_valid=False)
 
-        if self._is_mock_token(clean_token):
-            if "expired" in clean_token:
-                return NormalizedMetaToken(
-                    access_token=clean_token,
-                    expires_at=datetime.now(timezone.utc) - timedelta(days=1),
-                    is_valid=False,
-                )
-            return NormalizedMetaToken(
-                access_token=clean_token,
-                expires_at=datetime.now(timezone.utc) + timedelta(days=45),
-                meta_user_id="mock_meta_user_1",
-                is_valid=True,
-            )
-
         app_token = f"{self.app_id}|{self.app_secret}" if (self.app_id and self.app_secret) else clean_token
         res = self._request_graph(
             "GET",
@@ -311,16 +282,6 @@ class MetaGraphProvider(MetaLeadAdsProvider):
         if not clean_token:
             raise ProviderDispatchError("Missing Meta user access token.", is_transient=False)
 
-        if self._is_mock_token(clean_token):
-            return [
-                NormalizedMetaPage(
-                    page_id="mock_page_1001",
-                    name="Apex Fitness Downtown",
-                    access_token="mock_page_token_1001",
-                    instagram_business_account_id="mock_ig_2001",
-                )
-            ]
-
         res = self._request_graph(
             "GET",
             "me/accounts",
@@ -352,8 +313,6 @@ class MetaGraphProvider(MetaLeadAdsProvider):
         return pages
 
     def subscribe_page(self, page_id: str, page_access_token: str) -> bool:
-        if self._is_mock_token(page_access_token):
-            return True
         res = self._request_graph(
             "POST",
             f"{page_id}/subscribed_apps",
@@ -363,7 +322,7 @@ class MetaGraphProvider(MetaLeadAdsProvider):
         return bool(res.get("success", True))
 
     def unsubscribe_page(self, page_id: str, page_access_token: str) -> bool:
-        if not page_access_token or self._is_mock_token(page_access_token):
+        if not page_access_token:
             return True
         res = self._request_graph(
             "DELETE",
@@ -378,23 +337,6 @@ class MetaGraphProvider(MetaLeadAdsProvider):
         page_access_token: str,
         has_instagram: bool = False,
     ) -> list[NormalizedMetaLeadForm]:
-        if self._is_mock_token(page_access_token):
-            return [
-                NormalizedMetaLeadForm(
-                    form_id=f"mock_form_{page_id}",
-                    page_id=page_id,
-                    name="28-Day Challenge — Lead Form",
-                    platform="instagram" if has_instagram else "facebook",
-                    status="ACTIVE",
-                    questions=[
-                        NormalizedMetaQuestion(key="full_name", label="Full Name", field_type="FULL_NAME"),
-                        NormalizedMetaQuestion(key="email", label="Email", field_type="EMAIL"),
-                        NormalizedMetaQuestion(key="phone_number", label="Phone Number", field_type="PHONE"),
-                        NormalizedMetaQuestion(key="city", label="City", field_type="CITY"),
-                    ],
-                )
-            ]
-
         res = self._request_graph(
             "GET",
             f"{page_id}/leadgen_forms",
@@ -435,14 +377,6 @@ class MetaGraphProvider(MetaLeadAdsProvider):
         form_id: str,
         page_access_token: str,
     ) -> list[NormalizedMetaQuestion]:
-        if self._is_mock_token(page_access_token):
-            return [
-                NormalizedMetaQuestion(key="full_name", label="Full Name", field_type="FULL_NAME"),
-                NormalizedMetaQuestion(key="email", label="Email", field_type="EMAIL"),
-                NormalizedMetaQuestion(key="phone_number", label="Phone Number", field_type="PHONE"),
-                NormalizedMetaQuestion(key="city", label="City", field_type="CITY"),
-            ]
-
         res = self._request_graph(
             "GET",
             form_id,
@@ -456,33 +390,6 @@ class MetaGraphProvider(MetaLeadAdsProvider):
         leadgen_id: str,
         access_token: str,
     ) -> NormalizedMetaLead:
-        if self._is_mock_token(access_token) or leadgen_id.startswith("mock_"):
-            return NormalizedMetaLead(
-                leadgen_id=leadgen_id,
-                form_id="mock_form_mock_page_1001",
-                created_time=datetime.now(timezone.utc),
-                platform="facebook",
-                is_organic=False,
-                ad_id="ad_1",
-                ad_name="Promo Video Ad",
-                adset_id="adset_1",
-                adset_name="Local Homeowners",
-                campaign_id="camp_1",
-                campaign_name="Q4 Transformation Promo",
-                field_values={
-                    "full_name": "Sarah Jenkins",
-                    "email": "sarah.jenkins@example.com",
-                    "phone_number": "+13125550194",
-                    "city": "Chicago",
-                },
-                raw_answers=[
-                    {"name": "full_name", "values": ["Sarah Jenkins"]},
-                    {"name": "email", "values": ["sarah.jenkins@example.com"]},
-                    {"name": "phone_number", "values": ["+13125550194"]},
-                    {"name": "city", "values": ["Chicago"]},
-                ],
-            )
-
         res = self._request_graph(
             "GET",
             leadgen_id,

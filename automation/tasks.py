@@ -120,3 +120,14 @@ def dispatch_due_enrollments_beat_task(self) -> dict[str, Any]:
         dispatched += 1
 
     return {"tenants_dispatched": dispatched}
+
+
+@shared_task(name="automation.tasks.recover_stale_workflow_locks_beat_task")
+def recover_stale_workflow_locks_beat_task() -> dict[str, Any]:
+    now = timezone.now()
+    stale_cutoff = now - timedelta(seconds=STALE_LOCK_SECONDS)
+    updated = WorkflowEnrollment.unscoped_objects.filter(
+        locked_at__isnull=False,
+        locked_at__lt=stale_cutoff,
+    ).update(locked_at=None, updated_at=now)
+    return {"recovered_locks": updated}

@@ -73,6 +73,8 @@ _SENSITIVE_KEY_SUBSTRINGS = (
 
 
 def _check_ip_not_ssrf(ip_obj: ipaddress.IPv4Address | ipaddress.IPv6Address, url: str) -> None:
+    if getattr(settings, "ALLOW_LOCAL_WEBHOOKS", False):
+        return
     if (
         ip_obj.is_private
         or ip_obj.is_loopback
@@ -108,11 +110,12 @@ def validate_webhook_target_url(url: str, *, require_dns_resolution: bool = Fals
         )
 
     if not getattr(settings, "DEBUG", False) and scheme != "https":
-        raise ApplicationError(
-            detail="Webhook URL must use https in production.",
-            code="https_required",
-            status_code=status.HTTP_400_BAD_REQUEST,
-        )
+        if not getattr(settings, "ALLOW_LOCAL_WEBHOOKS", False):
+            raise ApplicationError(
+                detail="Webhook URL must use https in production.",
+                code="https_required",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
 
     hostname = (parsed.hostname or "").strip().lower().rstrip(".")
     if not hostname:
@@ -128,11 +131,12 @@ def validate_webhook_target_url(url: str, *, require_dns_resolution: bool = Fals
         or hostname.endswith(".internal")
         or hostname.endswith(".localhost")
     ):
-        raise ApplicationError(
-            detail=f"Webhook URL hostname '{hostname}' is not allowed.",
-            code="webhook_ssrf_blocked",
-            status_code=status.HTTP_400_BAD_REQUEST,
-        )
+        if not getattr(settings, "ALLOW_LOCAL_WEBHOOKS", False):
+            raise ApplicationError(
+                detail=f"Webhook URL hostname '{hostname}' is not allowed.",
+                code="webhook_ssrf_blocked",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
 
     try:
         literal_ip = ipaddress.ip_address(hostname)

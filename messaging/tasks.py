@@ -63,7 +63,7 @@ def _mark_message_failed(
 def dispatch_outbound_message_task(self, tenant_id: str, message_id: str) -> dict[str, Any]:
     with transaction.atomic():
         message = (
-            Message.objects.select_for_update()
+            Message.objects.select_for_update(of=("self",))
             .select_related("contact", "template")
             .filter(pk=message_id)
             .first()

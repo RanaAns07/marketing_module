@@ -10,6 +10,8 @@ env = environ.Env(
     DEBUG=(bool, False),
     SECRET_KEY=(str, "insecure-dev-secret-key-for-local-setup-only-32chars"),
     FIELD_ENCRYPTION_KEY=(str, ""),
+    ALLOW_LOCAL_WEBHOOKS=(bool, False),
+    ENABLE_TEST_DOUBLES=(bool, False),
     DATABASE_URL=(str, "postgres://crm_user:crm_password@localhost:5433/crm_db"),
     REDIS_URL=(str, "redis://localhost:6380/0"),
     CELERY_BROKER_URL=(str, "redis://localhost:6380/0"),
@@ -29,6 +31,8 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = env.bool("USE_X_FORWARDED_HOST", default=True)
 USE_X_FORWARDED_PROTO = env.bool("USE_X_FORWARDED_PROTO", default=True)
 PUBLIC_BASE_URL = env("PUBLIC_BASE_URL", default="")
+ALLOW_LOCAL_WEBHOOKS = env.bool("ALLOW_LOCAL_WEBHOOKS", default=False)
+ENABLE_TEST_DOUBLES = env.bool("ENABLE_TEST_DOUBLES", default=False)
 
 DJANGO_APPS = [
     "django.contrib.admin",
@@ -109,7 +113,8 @@ CACHES = {
         "BACKEND": env(
             "CACHE_BACKEND",
             default="django.core.cache.backends.redis.RedisCache",
-        ),
+        )
+        or "django.core.cache.backends.redis.RedisCache",
         "LOCATION": REDIS_URL,
     }
 }
@@ -159,6 +164,7 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "api_key": env("THROTTLE_RATE_API_KEY", default="600/minute"),
         "tenant": env("THROTTLE_RATE_TENANT", default="1200/minute"),
+        "webhook": env("THROTTLE_RATE_WEBHOOK", default="600/minute"),
     },
 }
 
@@ -276,6 +282,10 @@ CELERY_BEAT_SCHEDULE = {
     "dispatch-due-workflow-enrollments": {
         "task": "automation.tasks.dispatch_due_enrollments_beat_task",
         "schedule": timedelta(seconds=15),
+    },
+    "recover-stale-workflow-locks": {
+        "task": "automation.tasks.recover_stale_workflow_locks_beat_task",
+        "schedule": timedelta(minutes=5),
     },
     "retry-due-webhook-deliveries": {
         "task": "webhooks.tasks.retry_due_webhook_deliveries_beat_task",

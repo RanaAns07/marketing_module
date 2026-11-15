@@ -1,4 +1,5 @@
 from typing import Any
+from django.conf import settings
 from rest_framework import status
 from core.context import get_current_tenant_id, tenant_context
 from core.exceptions import ApplicationError
@@ -45,6 +46,10 @@ DEFAULT_PROVIDER_FOR_CHANNEL: dict[str, str] = {
 
 
 def get_meta_provider(**kwargs: Any) -> MetaLeadAdsProvider:
+    if getattr(settings, "ENABLE_TEST_DOUBLES", False):
+        from integrations.providers.fakes import FakeMetaGraphProvider
+
+        return FakeMetaGraphProvider(**kwargs)
     provider_cls = META_PROVIDER_CLASSES["meta"]
     return provider_cls(**kwargs)
 
@@ -58,6 +63,12 @@ def get_provider_class(
         (provider_name or "").strip().lower()
         or DEFAULT_PROVIDER_FOR_CHANNEL.get(norm_channel, "")
     )
+    if getattr(settings, "ENABLE_TEST_DOUBLES", False):
+        from integrations.providers.fakes import FAKE_PROVIDER_CLASSES
+
+        fake_cls = FAKE_PROVIDER_CLASSES.get((norm_channel, norm_provider))
+        if fake_cls is not None:
+            return fake_cls
     provider_cls = PROVIDER_CLASSES.get((norm_channel, norm_provider))
     if provider_cls is None:
         raise ApplicationError(

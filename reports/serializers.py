@@ -22,6 +22,7 @@ class LeadAcquisitionReportSerializer(serializers.Serializer):
     by_form = LeadAcquisitionItemSerializer(many=True)
     over_time = LeadAcquisitionOverTimeSerializer(many=True)
     note = serializers.CharField()
+    roas_scope_note = serializers.CharField(required=False)
 
 
 class PipelineStatusItemSerializer(serializers.Serializer):
@@ -108,6 +109,8 @@ class MessagingReportSerializer(serializers.Serializer):
     failure_rate = serializers.FloatField()
     cost_summary = serializers.DictField(required=False, allow_null=True)
     note = serializers.CharField()
+    roas_scope_note = serializers.CharField(required=False)
+    disclaimer = serializers.CharField(required=False, allow_null=True)
 
 
 class DrillDownDescriptorSerializer(serializers.Serializer):
@@ -118,13 +121,17 @@ class DrillDownDescriptorSerializer(serializers.Serializer):
 class DashboardMetricValueSerializer(serializers.Serializer):
     value = serializers.JSONField()
     drill_down = DrillDownDescriptorSerializer()
+    note = serializers.CharField(required=False)
+    roas_scope_note = serializers.CharField(required=False)
 
 
 class EstimatedSpendMetricSerializer(serializers.Serializer):
     amount = serializers.FloatField()
     currency = serializers.CharField()
-    is_estimate = serializers.BooleanField()
+    is_estimate = serializers.BooleanField(default=True)
+    estimate = serializers.BooleanField(default=True, required=False)
     disclaimer = serializers.CharField()
+    cost_estimate_disclaimer = serializers.CharField(required=False)
     drill_down = DrillDownDescriptorSerializer()
 
 
@@ -142,3 +149,7 @@ class DashboardResponseSerializer(serializers.Serializer):
     delivery_rate = DashboardMetricValueSerializer()
     estimated_spend = EstimatedSpendMetricSerializer(required=False)
     integration_health = serializers.DictField(required=False)
+    note = serializers.CharField(required=False)
+    roas_scope_note = serializers.CharField(required=False)
+    disclaimer = serializers.CharField(required=False, allow_null=True)
+    cost_estimate_disclaimer = serializers.CharField(required=False, allow_null=True)

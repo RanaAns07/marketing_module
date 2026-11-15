@@ -5,14 +5,13 @@ from typing import Any
 import uuid
 from django.core import signing
 from django.db import IntegrityError, transaction
-from django.db.models import Q
 from django.utils import timezone
 from rest_framework import status
 from accounts.models import User
-from accounts.services import AssignmentService, resolve_tenant_lead_assignee
+from accounts.services import AssignmentService
 from contacts.models import Contact, CustomFieldDefinition, Tag
 from contacts.services import ContactService, normalize_phone_e164
-from core.context import require_tenant, require_tenant_id, tenant_context
+from core.context import require_tenant_id, tenant_context
 from core.exceptions import ApplicationError
 from integrations.providers.registry import (
     NormalizedMetaLead,
@@ -22,7 +21,7 @@ from integrations.providers.registry import (
     get_meta_provider,
 )
 from leads.models import MetaConnection, MetaLeadEvent, MetaLeadForm, MetaPage
-from leads.selectors import get_meta_connection, get_meta_page_by_identifier
+from leads.selectors import get_meta_connection
 
 _META_OAUTH_SALT = "leads.meta.oauth.state"
 

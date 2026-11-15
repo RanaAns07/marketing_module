@@ -79,7 +79,7 @@ def _mark_lead_event_failed(
 def process_meta_lead_event_task(self, tenant_id: str, lead_event_id: str) -> dict[str, Any]:
     with transaction.atomic():
         lead_event = (
-            MetaLeadEvent.objects.select_for_update()
+            MetaLeadEvent.objects.select_for_update(of=("self",))
             .select_related("page", "page__connection", "form")
             .filter(pk=lead_event_id)
             .first()
@@ -146,7 +146,7 @@ def process_meta_lead_event_task(self, tenant_id: str, lead_event_id: str) -> di
     try:
         with transaction.atomic():
             locked_event = (
-                MetaLeadEvent.objects.select_for_update()
+                MetaLeadEvent.objects.select_for_update(of=("self",))
                 .select_related("page", "form")
                 .filter(pk=lead_event_id)
                 .first()

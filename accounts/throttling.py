@@ -41,3 +41,19 @@ class TenantRateThrottle(SimpleRateThrottle):
             return super().allow_request(request, view)
         except Exception:
             return True
+
+
+class WebhookRateThrottle(SimpleRateThrottle):
+    scope = "webhook"
+
+    def get_cache_key(self, request, view):
+        return self.cache_format % {
+            "scope": self.scope,
+            "ident": self.get_ident(request),
+        }
+
+    def allow_request(self, request, view):
+        try:
+            return super().allow_request(request, view)
+        except Exception:
+            return True

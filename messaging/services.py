@@ -5,8 +5,8 @@ import uuid
 from django.conf import settings
 from django.core import signing
 from django.core.validators import validate_email
-from django.db import IntegrityError, models, transaction
-from django.db.models import F, Q
+from django.db import IntegrityError, transaction
+from django.db.models import F
 from django.utils import timezone
 from rest_framework import status
 from accounts.models import User

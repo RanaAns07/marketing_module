@@ -1,19 +1,16 @@
 from collections.abc import Mapping
 from decimal import Decimal
 from typing import Any
-import uuid
 from django.conf import settings
-from django.db.models import Count, Q, QuerySet, Sum
+from django.db.models import Count, QuerySet, Sum
 from django.utils.dateparse import parse_date, parse_datetime
 from core.context import require_tenant
 from core.models import Tenant
+from core.constants import COST_ESTIMATE_DISCLAIMER
 from messaging.models import Channel
 from usage.models import RateCard, UsageRecord
 
-USAGE_DISCLAIMER_TEXT = (
-    "Usage costs are estimated based on configured rate cards and message segments/categories. "
-    "Final provider billing may vary due to carrier surcharges, taxes, and provider pricing tiers."
-)
+USAGE_DISCLAIMER_TEXT = COST_ESTIMATE_DISCLAIMER
 
 
 def _clean_country(raw: Any) -> str:
@@ -174,6 +171,9 @@ def compute_usage_summary(
             "bounced_count": bounced_count,
             "estimated_cost": float(cost_sum),
             "currency": default_currency,
+            "is_estimate": True,
+            "estimate": True,
+            "disclaimer": COST_ESTIMATE_DISCLAIMER,
         }
 
     status_breakdown = {

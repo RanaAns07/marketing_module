@@ -1,29 +1,29 @@
 from collections.abc import Mapping
 from datetime import datetime, time as dt_time, timedelta
 from decimal import Decimal
-import hashlib
 from typing import Any
 import zoneinfo
 from django.conf import settings
-from django.db.models import Count, Q, QuerySet, Sum
+from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncDate, TruncWeek
 from django.utils import timezone
-from django.utils.dateparse import parse_date, parse_datetime
+from django.utils.dateparse import parse_date
 from accounts.models import Membership
-from accounts.selectors import get_team_workload
 from automation.models import StepExecution, Workflow, WorkflowEnrollment
-from contacts.models import Activity, Appointment, Contact, LeadStatus, Tag
+from contacts.models import Activity, Contact, LeadStatus, Tag
 from contacts.selectors import apply_marketer_visibility, get_base_contacts_queryset
 from core.context import require_tenant
 from inbox.models import Conversation
 from inbox.selectors import apply_inbox_visibility
+from core.constants import COST_ESTIMATE_DISCLAIMER, ROAS_SCOPE_NOTE
 from integrations.models import ChannelConnection
 from leads.models import MetaConnection
-from messaging.models import Channel, Message
+from messaging.models import Message
 from usage.models import UsageRecord
-from usage.selectors import USAGE_DISCLAIMER_TEXT, compute_usage_summary
+from usage.selectors import compute_usage_summary
 
-REPORT_ROAS_NOTE = "Ad spend and ROAS are out of scope and remain in Meta Ads Manager."
+USAGE_DISCLAIMER_TEXT = COST_ESTIMATE_DISCLAIMER
+REPORT_ROAS_NOTE = ROAS_SCOPE_NOTE
 
 
 def resolve_tenant_timezone(tenant_tz_name: str | None = None) -> zoneinfo.ZoneInfo:
@@ -184,7 +184,8 @@ def get_lead_acquisition_report(
         "by_campaign": by_campaign,
         "by_form": by_form,
         "over_time": over_time,
-        "note": REPORT_ROAS_NOTE,
+        "note": ROAS_SCOPE_NOTE,
+        "roas_scope_note": ROAS_SCOPE_NOTE,
     }
 
 
@@ -361,7 +362,9 @@ def get_messaging_report(
         "delivery_rate": delivery_rate,
         "failure_rate": failure_rate,
         "cost_summary": cost_summary,
-        "note": REPORT_ROAS_NOTE,
+        "note": ROAS_SCOPE_NOTE,
+        "roas_scope_note": ROAS_SCOPE_NOTE,
+        "disclaimer": COST_ESTIMATE_DISCLAIMER if cost_summary is not None else None,
     }
 
 
@@ -412,6 +415,8 @@ def get_dashboard_data(
         "end_date": end_iso,
         "new_leads": {
             "value": new_leads_count,
+            "note": ROAS_SCOPE_NOTE,
+            "roas_scope_note": ROAS_SCOPE_NOTE,
             "drill_down": {
                 "resource": "contacts",
                 "params": {"acquired_after": start_iso, "acquired_before": end_iso},
@@ -469,6 +474,9 @@ def get_dashboard_data(
         },
     }
 
+    metrics["roas_scope_note"] = ROAS_SCOPE_NOTE
+    metrics["note"] = ROAS_SCOPE_NOTE
+
     is_manager = membership.role in (Membership.Role.OWNER, Membership.Role.ADMIN)
     if is_manager:
         spend_sum = (
@@ -481,12 +489,16 @@ def get_dashboard_data(
             "amount": float(spend_sum),
             "currency": getattr(settings, "DEFAULT_USAGE_CURRENCY", "USD"),
             "is_estimate": True,
-            "disclaimer": USAGE_DISCLAIMER_TEXT,
+            "estimate": True,
+            "disclaimer": COST_ESTIMATE_DISCLAIMER,
+            "cost_estimate_disclaimer": COST_ESTIMATE_DISCLAIMER,
             "drill_down": {
                 "resource": "usage_records",
                 "params": {"from_date": start_iso, "to_date": end_iso},
             },
         }
+        metrics["disclaimer"] = COST_ESTIMATE_DISCLAIMER
+        metrics["cost_estimate_disclaimer"] = COST_ESTIMATE_DISCLAIMER
 
         meta_conn = MetaConnection.objects.first()
         meta_info = {

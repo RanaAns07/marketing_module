@@ -121,15 +121,6 @@ class _TwilioBaseMixin:
     def _auth_token(self) -> str:
         return str(self.credentials.get("auth_token") or "").strip()
 
-    def _is_mock_mode(self) -> bool:
-        sid = self._account_sid()
-        token = self._auth_token()
-        return (
-            bool(self.credentials.get("mock"))
-            or sid.startswith(("ACmock", "mock_", "test_"))
-            or token.startswith(("mock_", "test_"))
-        )
-
     def _check_account_credentials(self) -> tuple[bool, str]:
         sid = self._account_sid()
         token = self._auth_token()
@@ -137,8 +128,6 @@ class _TwilioBaseMixin:
             return False, "Missing Twilio account_sid or auth_token."
         if not self.sender_identity:
             return False, "Missing Twilio sender phone number."
-        if self._is_mock_mode():
-            return True, "Twilio connection verified (mock mode)."
         try:
             response = requests.get(
                 f"{_TWILIO_API_BASE}/Accounts/{sid}.json",
@@ -171,15 +160,6 @@ class TwilioSMSProvider(_TwilioBaseMixin, SMSProvider):
             raise ProviderDispatchError("Twilio credentials are not configured.", is_transient=False)
         if not sender:
             raise ProviderDispatchError("Twilio SMS sender phone number is not configured.", is_transient=False)
-
-        if self._is_mock_mode():
-            mock_sid = f"SM{uuid.uuid4().hex[:32]}"
-            return ProviderSendResult(
-                provider=self.provider_name,
-                provider_message_id=mock_sid,
-                status="sent",
-                raw_response={"mock": True, "sid": mock_sid},
-            )
 
         form_data: dict[str, str] = {
             "To": recipient,
@@ -322,19 +302,6 @@ class TwilioWhatsAppProvider(_TwilioBaseMixin, WhatsAppProvider):
             raise ProviderDispatchError("Twilio credentials are not configured.", is_transient=False)
         if not sender:
             raise ProviderDispatchError("Twilio WhatsApp sender number is not configured.", is_transient=False)
-
-        if self._is_mock_mode():
-            mock_sid = f"WA{uuid.uuid4().hex[:32]}"
-            return ProviderSendResult(
-                provider=self.provider_name,
-                provider_message_id=mock_sid,
-                status="sent",
-                raw_response={
-                    "mock": True,
-                    "sid": mock_sid,
-                    "content_sid": content_sid,
-                },
-            )
 
         form_data: dict[str, str] = {
             "To": recipient,
@@ -495,9 +462,6 @@ class TwilioWhatsAppProvider(_TwilioBaseMixin, WhatsAppProvider):
                     )
                 )
             return normalized_list
-
-        if self._is_mock_mode():
-            return []
 
         try:
             response = requests.get(

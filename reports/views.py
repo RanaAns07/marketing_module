@@ -1,5 +1,4 @@
 import hashlib
-import json
 from django.core.cache import cache
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status

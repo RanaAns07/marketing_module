@@ -1,6 +1,5 @@
 from collections.abc import Iterable
 from typing import Any
-import uuid
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework import status

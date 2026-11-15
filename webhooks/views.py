@@ -15,7 +15,7 @@ from rest_framework.views import APIView
 from accounts.authentication import APIKeyHMACAuthentication
 from accounts.models import TenantAPIKey
 from accounts.permissions import HasAPIKeyScope
-from accounts.throttling import APIKeyRateThrottle, TenantRateThrottle
+from accounts.throttling import APIKeyRateThrottle, TenantRateThrottle, WebhookRateThrottle
 from contacts.models import Appointment, Contact
 from contacts.serializers import AppointmentSerializer, ContactSerializer
 from contacts.services import (
@@ -77,6 +77,32 @@ class WebhookAckSerializer(serializers.Serializer):
     events_created = serializers.IntegerField(required=False)
 
 
+MAX_WEBHOOK_PAYLOAD_BYTES = 5 * 1024 * 1024
+
+
+def _check_request_size(request) -> Response | None:
+    content_length = request.META.get("CONTENT_LENGTH")
+    if content_length:
+        try:
+            if int(content_length) > MAX_WEBHOOK_PAYLOAD_BYTES:
+                return Response(
+                    {"detail": "Request payload exceeds size limit."},
+                    status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                )
+        except (ValueError, TypeError):
+            pass
+    try:
+        body = getattr(request, "_body", None) or getattr(request, "body", None)
+        if body and len(body) > MAX_WEBHOOK_PAYLOAD_BYTES:
+            return Response(
+                {"detail": "Request payload exceeds size limit."},
+                status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            )
+    except Exception:
+        pass
+    return None
+
+
 def _resolve_public_webhook_url(request) -> str:
     request_url = request.build_absolute_uri()
     public_base = str(getattr(settings, "PUBLIC_BASE_URL", "") or "").strip().rstrip("/")
@@ -134,6 +160,10 @@ def _handle_twilio_webhook(
     channel: str,
     forced_event_type: str | None = None,
 ) -> Response:
+    size_err = _check_request_size(request)
+    if size_err is not None:
+        return size_err
+
     if hasattr(request.POST, "dict") and request.POST:
         payload_dict: dict[str, Any] = request.POST.dict()
     elif isinstance(request.data, dict):
@@ -206,6 +236,7 @@ def _handle_twilio_webhook(
 class TwilioSMSWebhookView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
+    throttle_classes = [WebhookRateThrottle]
     parser_classes = [FormParser, MultiPartParser, JSONParser]
 
     @extend_schema(request=None, responses={200: WebhookAckSerializer})
@@ -220,6 +251,7 @@ class TwilioSMSWebhookView(APIView):
 class TwilioWhatsAppWebhookView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
+    throttle_classes = [WebhookRateThrottle]
     parser_classes = [FormParser, MultiPartParser, JSONParser]
 
     @extend_schema(request=None, responses={200: WebhookAckSerializer})
@@ -234,10 +266,15 @@ class TwilioWhatsAppWebhookView(APIView):
 class SendGridWebhookView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
+    throttle_classes = [WebhookRateThrottle]
     parser_classes = [JSONParser, FormParser, MultiPartParser]
 
     @extend_schema(request=None, responses={200: WebhookAckSerializer})
     def post(self, request, webhook_token: str, mode: str | None = None):
+        size_err = _check_request_size(request)
+        if size_err is not None:
+            return size_err
+
         connection = resolve_connection_by_webhook_token(webhook_token)
         if connection is None:
             return Response(
@@ -310,6 +347,7 @@ class SendGridWebhookView(APIView):
 class MetaWebhookView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
+    throttle_classes = [WebhookRateThrottle]
     parser_classes = [JSONParser]
 
     @extend_schema(
@@ -343,6 +381,10 @@ class MetaWebhookView(APIView):
         responses={200: WebhookAckSerializer},
     )
     def post(self, request):
+        size_err = _check_request_size(request)
+        if size_err is not None:
+            return size_err
+
         provider = get_meta_provider()
         raw_bytes = request.body
         if not provider.verify_signature(
@@ -368,6 +410,16 @@ class BaseExternalAPIView(APIView):
     permission_classes = [HasAPIKeyScope]
     throttle_classes = [APIKeyRateThrottle, TenantRateThrottle]
     parser_classes = [JSONParser]
+
+    def initial(self, request, *args, **kwargs):
+        super().initial(request, *args, **kwargs)
+        size_err = _check_request_size(request)
+        if size_err is not None:
+            raise ApplicationError(
+                detail="Request payload exceeds size limit.",
+                code="payload_too_large",
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            )
 
 
 class ExternalContactUpsertView(BaseExternalAPIView):
