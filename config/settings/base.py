@@ -165,6 +165,11 @@ REST_FRAMEWORK = {
         "api_key": env("THROTTLE_RATE_API_KEY", default="600/minute"),
         "tenant": env("THROTTLE_RATE_TENANT", default="1200/minute"),
         "webhook": env("THROTTLE_RATE_WEBHOOK", default="600/minute"),
+        "auth_register": env("THROTTLE_RATE_AUTH_REGISTER", default="10/minute"),
+        "auth_login": env("THROTTLE_RATE_AUTH_LOGIN", default="15/minute"),
+        "auth_forgot": env("THROTTLE_RATE_AUTH_FORGOT", default="10/minute"),
+        "auth_resend": env("THROTTLE_RATE_AUTH_RESEND", default="5/minute"),
+        "auth_accept": env("THROTTLE_RATE_AUTH_ACCEPT", default="15/minute"),
     },
 }
 

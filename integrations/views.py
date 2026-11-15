@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from accounts.permissions import IsOwnerOrAdmin
+from accounts.permissions import IsEmailVerified, IsOwnerOrAdmin
 from core.views import TenantScopedViewSet
 from integrations.models import ChannelConnection
 from integrations.selectors import get_channel_connections_queryset
@@ -22,7 +22,7 @@ from messaging.serializers import MessageTemplateSerializer
 
 class ChannelConnectionViewSet(TenantScopedViewSet):
     serializer_class = ChannelConnectionSerializer
-    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin, IsEmailVerified]
     queryset = ChannelConnection.unscoped_objects.none()
 
     def get_queryset(self):

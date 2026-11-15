@@ -1,7 +1,7 @@
 from typing import Any
 import uuid
 from django.db.models import Count, F, QuerySet
-from accounts.models import Membership, TenantAPIKey, User
+from accounts.models import Membership, TenantAPIKey, TenantInvitation, User
 
 
 def get_user_memberships(user: User) -> QuerySet[Membership]:
@@ -93,4 +93,16 @@ def get_team_workload() -> list[dict[str, Any]]:
             }
         )
     return workload
+
+
+def get_tenant_invitations_queryset() -> QuerySet[TenantInvitation]:
+    return TenantInvitation.objects.select_related("tenant", "invited_by").order_by("-created_at")
+
+
+def get_tenant_invitation_by_id(invitation_id: uuid.UUID | str) -> TenantInvitation | None:
+    return (
+        TenantInvitation.objects.select_related("tenant", "invited_by")
+        .filter(pk=invitation_id)
+        .first()
+    )
 

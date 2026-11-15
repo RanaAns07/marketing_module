@@ -432,6 +432,18 @@ class MessagingService:
         metadata: dict[str, Any] | None = None,
     ) -> Message:
         tenant_id = require_tenant_id()
+        if getattr(contact.tenant, "deactivated_at", None) is not None:
+            raise ApplicationError(
+                detail="Cannot send messages while tenant is deactivated.",
+                code="tenant_deactivated",
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+        if sent_by is not None and not getattr(sent_by, "email_verified", False):
+            raise ApplicationError(
+                detail="Email address must be verified before sending messages.",
+                code="email_not_verified",
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
         norm_channel = (channel or (template.channel if template else "")).strip().lower()
         clean_idemp_key = (idempotency_key or "").strip() or None
 

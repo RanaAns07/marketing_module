@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from accounts.permissions import (
     CanAccessContactObject,
+    IsEmailVerified,
     IsOwnerOrAdmin,
     IsOwnerOrAdminOrReadOnly,
     IsTenantMember,
@@ -193,7 +194,7 @@ class MessageTemplateViewSet(TenantScopedViewSet):
 
 class BroadcastViewSet(TenantScopedViewSet):
     serializer_class = BroadcastSerializer
-    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin, IsEmailVerified]
     queryset = Broadcast.unscoped_objects.none()
 
     def get_queryset(self):
@@ -311,7 +312,12 @@ class MessageViewSet(viewsets.ReadOnlyModelViewSet):
         request=SendMessageSerializer,
         responses={201: MessageSerializer},
     )
-    @action(detail=False, methods=["post"], url_path="send")
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="send",
+        permission_classes=[IsAuthenticated, IsTenantMember, IsEmailVerified],
+    )
     def send_message(self, request):
         serializer = SendMessageSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

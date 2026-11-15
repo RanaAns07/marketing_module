@@ -1,10 +1,28 @@
 from collections.abc import Mapping
+from django.utils import timezone
+from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 from accounts.authentication import resolve_request_tenant_membership
 from accounts.models import Membership, TenantAPIKey
 from core.context import set_current_tenant
-from core.exceptions import TenantContextRequired
+from core.exceptions import ApplicationError, TenantContextRequired
+
+
+class IsEmailVerified(BasePermission):
+    message = "Email verification is required to perform this action."
+
+    def has_permission(self, request, view) -> bool:
+        user = getattr(request, "user", None)
+        if not user or not user.is_authenticated or not user.is_active:
+            return False
+        if not getattr(user, "email_verified", False):
+            raise ApplicationError(
+                detail="Email verification is required to perform this action.",
+                code="email_unverified",
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+        return True
 
 
 class IsTenantMember(BasePermission):
@@ -24,6 +42,16 @@ class IsTenantMember(BasePermission):
 
         if not membership.is_active or not membership.tenant.is_active:
             return False
+
+        if membership.tenant.deactivated_at is not None:
+            if membership.tenant.grace_period_ends_at and timezone.now() > membership.tenant.grace_period_ends_at:
+                return False
+            if request.method not in SAFE_METHODS and getattr(view, "allow_during_deactivation", False) is not True:
+                raise ApplicationError(
+                    detail="Tenant is deactivated and in grace period. Writes and sends are disabled.",
+                    code="tenant_deactivated",
+                    status_code=status.HTTP_403_FORBIDDEN,
+                )
 
         set_current_tenant(membership.tenant)
         return True

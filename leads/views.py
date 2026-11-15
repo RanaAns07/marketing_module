@@ -6,7 +6,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from accounts.models import Membership
-from accounts.permissions import IsOwnerOrAdmin
+from accounts.permissions import IsEmailVerified, IsOwnerOrAdmin
 from core.context import get_current_tenant_id
 from core.exceptions import ApplicationError
 from core.views import TenantScopedViewSet
@@ -48,7 +48,7 @@ from leads.services import (
 
 
 class MetaOAuthConnectURLView(APIView):
-    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin, IsEmailVerified]
 
     @extend_schema(
         operation_id="leads_meta_connect_url",
@@ -172,7 +172,7 @@ class MetaConnectionStatusView(APIView):
 
 
 class MetaReconnectView(APIView):
-    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin, IsEmailVerified]
 
     @extend_schema(
         operation_id="leads_meta_reconnect",
@@ -200,7 +200,7 @@ class MetaReconnectView(APIView):
 
 
 class MetaDisconnectView(APIView):
-    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin, IsEmailVerified]
 
     @extend_schema(
         operation_id="leads_meta_disconnect",
@@ -213,7 +213,7 @@ class MetaDisconnectView(APIView):
 
 class MetaPageViewSet(TenantScopedViewSet):
     serializer_class = MetaPageSerializer
-    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin, IsEmailVerified]
     queryset = MetaPage.unscoped_objects.none()
     http_method_names = ["get", "post", "head", "options"]
 
@@ -307,7 +307,7 @@ class MetaPageViewSet(TenantScopedViewSet):
 
 class MetaLeadFormViewSet(TenantScopedViewSet):
     serializer_class = MetaLeadFormSerializer
-    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin, IsEmailVerified]
     queryset = MetaLeadForm.unscoped_objects.none()
     http_method_names = ["get", "post", "patch", "head", "options"]
 

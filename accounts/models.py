@@ -35,6 +35,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     phone = models.CharField(max_length=32, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    email_verified = models.BooleanField(default=False)
+    email_verified_at = models.DateTimeField(null=True, blank=True)
     email_notifications_enabled = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -156,3 +158,54 @@ class TenantAPIKey(TenantOwnedModel):
 
     def __str__(self) -> str:
         return f"{self.name} ({self.key_id})"
+
+
+class TenantInvitation(TenantOwnedModel):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        ACCEPTED = "accepted", "Accepted"
+        REVOKED = "revoked", "Revoked"
+        EXPIRED = "expired", "Expired"
+
+    email = models.EmailField(db_index=True)
+    role = models.CharField(
+        max_length=20,
+        choices=Membership.Role.choices,
+        default=Membership.Role.MARKETER,
+    )
+    invited_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sent_invitations",
+    )
+    token = models.CharField(max_length=255, unique=True, db_index=True)
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+    )
+    expires_at = models.DateTimeField()
+    accepted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "email"],
+                condition=Q(status="pending"),
+                name="uniq_pending_invite_tenant_email",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["tenant", "status"], name="idx_invite_tenant_status"),
+            models.Index(fields=["token"], name="idx_invite_token"),
+        ]
+
+    def is_valid(self, now=None) -> bool:
+        ref_now = now or timezone.now()
+        return self.status == self.Status.PENDING and self.expires_at > ref_now
+
+    def __str__(self) -> str:
+        return f"Invitation({self.email}, {self.role}, {self.status}) @ {self.tenant_id}"
