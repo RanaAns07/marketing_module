@@ -4,9 +4,18 @@ from core.models import TenantOwnedModel
 
 
 class TenantScopedPrimaryKeyRelatedField(serializers.PrimaryKeyRelatedField):
+    def get_queryset(self):
+        queryset = self.queryset
+        if isinstance(queryset, ( models_manager := getattr(queryset, "model", None) and queryset )):
+            pass
+        model_cls = getattr(queryset, "model", None)
+        if model_cls is not None and issubclass(model_cls, TenantOwnedModel):
+            return model_cls.objects.all()
+        return super().get_queryset()
+
     def to_internal_value(self, data):
         tenant_id = require_tenant_id()
-        queryset = self.get_queryset()
+        queryset = self.queryset
         model_cls = getattr(queryset, "model", None)
         if model_cls is not None and issubclass(model_cls, TenantOwnedModel):
             try:
@@ -20,6 +29,13 @@ class TenantScopedPrimaryKeyRelatedField(serializers.PrimaryKeyRelatedField):
 
 class TenantScopedSerializer(serializers.ModelSerializer):
     serializer_related_field = TenantScopedPrimaryKeyRelatedField
+
+    def build_relational_field(self, field_name, relation_info):
+        field_class, field_kwargs = super().build_relational_field(field_name, relation_info)
+        related_model = relation_info.related_model
+        if related_model is not None and issubclass(related_model, TenantOwnedModel):
+            field_kwargs["queryset"] = related_model.unscoped_objects.all()
+        return field_class, field_kwargs
 
     def validate(self, attrs):
         attrs = super().validate(attrs)

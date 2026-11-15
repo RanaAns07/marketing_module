@@ -10,10 +10,10 @@ env = environ.Env(
     DEBUG=(bool, False),
     SECRET_KEY=(str, "insecure-dev-secret-key-for-local-setup-only-32chars"),
     FIELD_ENCRYPTION_KEY=(str, ""),
-    DATABASE_URL=(str, f"sqlite:///{BASE_DIR / 'db.sqlite3'}"),
-    REDIS_URL=(str, "redis://localhost:6379/0"),
-    CELERY_BROKER_URL=(str, "redis://localhost:6379/0"),
-    CELERY_RESULT_BACKEND=(str, "redis://localhost:6379/0"),
+    DATABASE_URL=(str, "postgres://crm_user:crm_password@localhost:5433/crm_db"),
+    REDIS_URL=(str, "redis://localhost:6380/0"),
+    CELERY_BROKER_URL=(str, "redis://localhost:6380/0"),
+    CELERY_RESULT_BACKEND=(str, "redis://localhost:6380/0"),
 )
 
 env_file = os.path.join(BASE_DIR, ".env")
@@ -176,6 +176,9 @@ SPECTACULAR_SETTINGS = {
             }
         }
     },
+    "ENUM_NAME_OVERRIDES": {
+        "SubscriptionStatusEnum": "contacts.models.Contact.SubscriptionStatus",
+    },
 }
 
 CELERY_BROKER_URL = env("CELERY_BROKER_URL")
@@ -214,9 +217,19 @@ CELERY_TASK_ROUTES = {
     "automation.tasks.*": {"queue": "automation"},
     "core.tasks.*": {"queue": "default"},
     "notifications.tasks.*": {"queue": "default"},
+    "contacts.tasks.*": {"queue": "default"},
 }
 
-CELERY_BEAT_SCHEDULE = {}
+CELERY_BEAT_SCHEDULE = {
+    "detect-inactive-leads": {
+        "task": "contacts.tasks.detect_inactive_leads_beat_task",
+        "schedule": timedelta(hours=1),
+    },
+    "scan-due-soon-tasks": {
+        "task": "contacts.tasks.scan_due_soon_tasks_beat_task",
+        "schedule": timedelta(minutes=5),
+    },
+}
 
 EMAIL_BACKEND = env(
     "EMAIL_BACKEND",

@@ -81,6 +81,8 @@ def handle_domain_event(self, tenant_id: str, event: dict[str, Any]) -> dict[str
         )
 
     elif event_name == EventName.ASSIGNMENT_CHANGED:
+        if payload.get("notified"):
+            return {"subscriber": "notifications", "event_id": event.get("event_id")}
         new_user_id = payload.get("assigned_user_id")
         previous_user_id = payload.get("previous_assigned_user_id")
         if new_user_id:

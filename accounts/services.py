@@ -78,6 +78,8 @@ def register_tenant_and_owner(
             is_active=True,
             is_available=True,
         )
+        from contacts.services import seed_default_lead_statuses
+        seed_default_lead_statuses(tenant)
 
     tokens = issue_jwt_tokens_for_user(user)
     return {
