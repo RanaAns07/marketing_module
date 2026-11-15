@@ -191,6 +191,9 @@ SPECTACULAR_SETTINGS = {
         "ChannelEnum": "messaging.models.Channel",
         "MetaConnectionStatusEnum": "leads.models.MetaConnection.Status",
         "MetaLeadEventStatusEnum": "leads.models.MetaLeadEvent.Status",
+        "WorkflowStatusEnum": "automation.models.Workflow.Status",
+        "WorkflowEnrollmentStatusEnum": "automation.models.WorkflowEnrollment.Status",
+        "StepExecutionStatusEnum": "automation.models.StepExecution.Status",
     },
 }
 
@@ -251,6 +254,10 @@ CELERY_BEAT_SCHEDULE = {
     "check-meta-connections-health": {
         "task": "leads.tasks.check_meta_connections_health_beat_task",
         "schedule": timedelta(hours=6),
+    },
+    "dispatch-due-workflow-enrollments": {
+        "task": "automation.tasks.dispatch_due_enrollments_beat_task",
+        "schedule": timedelta(seconds=15),
     },
 }
 

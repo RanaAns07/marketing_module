@@ -21,6 +21,7 @@ class EventName:
     CONVERSION = "conversion"
     EXTERNAL_EVENT = "external_event"
     ASSIGNMENT_CHANGED = "assignment_changed"
+    OUTBOUND_WEBHOOK_REQUESTED = "outbound_webhook_requested"
 
     ALL = frozenset(
         {
@@ -40,6 +41,7 @@ class EventName:
             CONVERSION,
             EXTERNAL_EVENT,
             ASSIGNMENT_CHANGED,
+            OUTBOUND_WEBHOOK_REQUESTED,
         }
     )
 
