@@ -403,6 +403,8 @@ class ContactService:
         tags: Iterable[Any] | None = None,
         assigned_to: Membership | None = None,
         lead_status: LeadStatus | None = None,
+        acquired_at: Any = None,
+        raw_answers: Any = None,
         is_form_submission: bool = False,
         actor: User | None = None,
     ) -> tuple[Contact, bool]:
@@ -427,6 +429,7 @@ class ContactService:
             )
             target_status = lead_status or get_default_lead_status()
             now = timezone.now()
+            effective_acquired_at = acquired_at or now
             contact = Contact.objects.create(
                 first_name=fn,
                 last_name=ln,
@@ -444,26 +447,29 @@ class ContactService:
                 campaign=campaign.strip(),
                 ad_set=ad_set.strip(),
                 ad=ad.strip(),
-                acquired_at=now,
+                acquired_at=effective_acquired_at,
                 external_id=external_id.strip(),
                 last_activity_at=now,
                 custom_fields=validated_custom,
             )
             if is_form:
+                form_meta = {
+                    "source_channel": source_channel,
+                    "source_page": source_page,
+                    "source_form": source_form,
+                    "campaign": campaign,
+                    "ad_set": ad_set,
+                    "ad": ad,
+                    "custom_fields": custom_fields or {},
+                }
+                if raw_answers is not None:
+                    form_meta["raw_answers"] = raw_answers
                 log_contact_activity(
                     contact=contact,
                     actor=actor,
                     activity_type=Activity.ActivityType.FORM_SUBMISSION,
                     description=f"Submitted Lead Form {source_form or source_channel}".strip(),
-                    metadata={
-                        "source_channel": source_channel,
-                        "source_page": source_page,
-                        "source_form": source_form,
-                        "campaign": campaign,
-                        "ad_set": ad_set,
-                        "ad": ad,
-                        "custom_fields": custom_fields or {},
-                    },
+                    metadata=form_meta,
                 )
             else:
                 log_contact_activity(
@@ -571,21 +577,24 @@ class ContactService:
         existing.save()
 
         if is_form:
+            repeat_meta = {
+                "source_channel": source_channel,
+                "source_page": source_page,
+                "source_form": source_form,
+                "campaign": campaign,
+                "ad_set": ad_set,
+                "ad": ad,
+                "custom_fields": custom_fields or {},
+                "deduplicated": True,
+            }
+            if raw_answers is not None:
+                repeat_meta["raw_answers"] = raw_answers
             log_contact_activity(
                 contact=existing,
                 actor=actor,
                 activity_type=Activity.ActivityType.FORM_SUBMISSION,
                 description=f"Submitted Lead Form {source_form or source_channel}".strip(),
-                metadata={
-                    "source_channel": source_channel,
-                    "source_page": source_page,
-                    "source_form": source_form,
-                    "campaign": campaign,
-                    "ad_set": ad_set,
-                    "ad": ad,
-                    "custom_fields": custom_fields or {},
-                    "deduplicated": True,
-                },
+                metadata=repeat_meta,
             )
             publish(
                 EventName.FORM_SUBMITTED,

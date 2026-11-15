@@ -25,6 +25,11 @@ SECRET_KEY = env("SECRET_KEY")
 FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY")
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
 
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = env.bool("USE_X_FORWARDED_HOST", default=True)
+USE_X_FORWARDED_PROTO = env.bool("USE_X_FORWARDED_PROTO", default=True)
+PUBLIC_BASE_URL = env("PUBLIC_BASE_URL", default="")
+
 DJANGO_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -184,6 +189,8 @@ SPECTACULAR_SETTINGS = {
         "BroadcastStatusEnum": "messaging.models.Broadcast.Status",
         "MessageStatusEnum": "messaging.models.Message.Status",
         "ChannelEnum": "messaging.models.Channel",
+        "MetaConnectionStatusEnum": "leads.models.MetaConnection.Status",
+        "MetaLeadEventStatusEnum": "leads.models.MetaLeadEvent.Status",
     },
 }
 
@@ -219,6 +226,8 @@ CELERY_TASK_QUEUES = (
 CELERY_TASK_ROUTES = {
     "webhooks.tasks.*": {"queue": "webhooks"},
     "integrations.tasks.*": {"queue": "webhooks"},
+    "leads.tasks.process_meta_lead_event_task": {"queue": "webhooks"},
+    "leads.tasks.*": {"queue": "default"},
     "messaging.tasks.*": {"queue": "messaging"},
     "automation.tasks.*": {"queue": "automation"},
     "core.tasks.*": {"queue": "default"},
@@ -239,6 +248,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "messaging.tasks.claim_due_broadcasts_beat_task",
         "schedule": timedelta(minutes=1),
     },
+    "check-meta-connections-health": {
+        "task": "leads.tasks.check_meta_connections_health_beat_task",
+        "schedule": timedelta(hours=6),
+    },
 }
 
 EMAIL_BACKEND = env(
@@ -256,6 +269,8 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@crm.local")
 META_APP_ID = env("META_APP_ID", default="")
 META_APP_SECRET = env("META_APP_SECRET", default="")
 META_WEBHOOK_VERIFY_TOKEN = env("META_WEBHOOK_VERIFY_TOKEN", default="")
+META_GRAPH_VERSION = env("META_GRAPH_VERSION", default="v20.0")
+META_OAUTH_REDIRECT_URI = env("META_OAUTH_REDIRECT_URI", default="")
 
 CORS_ALLOW_ALL_ORIGINS = env.bool("CORS_ALLOW_ALL_ORIGINS", default=True)
 CORS_ALLOW_CREDENTIALS = True

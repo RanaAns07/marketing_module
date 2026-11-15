@@ -1,6 +1,10 @@
+import hmac
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
+from django.conf import settings
 from django.db import transaction
-from drf_spectacular.utils import extend_schema
+from django.http import HttpResponse
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import serializers, status
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny
@@ -10,15 +14,43 @@ from core.context import tenant_context
 from integrations.models import ChannelConnection, InboundWebhookEvent
 from integrations.providers.registry import (
     build_provider_for_connection,
+    get_meta_provider,
     resolve_connection_by_webhook_token,
     resolve_twilio_connection_by_number,
 )
 from integrations.tasks import process_webhook_event_task
+from leads.services import ingest_meta_webhook_changes
 
 
 class WebhookAckSerializer(serializers.Serializer):
     status = serializers.CharField()
     webhook_event_id = serializers.UUIDField(required=False)
+    events_created = serializers.IntegerField(required=False)
+
+
+def _resolve_public_webhook_url(request) -> str:
+    request_url = request.build_absolute_uri()
+    public_base = str(getattr(settings, "PUBLIC_BASE_URL", "") or "").strip().rstrip("/")
+    if not public_base:
+        return request_url
+    try:
+        parsed_base = urlsplit(public_base)
+        parsed_req = urlsplit(request_url)
+        if parsed_base.scheme and parsed_base.netloc:
+            base_path = parsed_base.path.rstrip("/")
+            combined_path = f"{base_path}{parsed_req.path}" if base_path else parsed_req.path
+            return urlunsplit(
+                (
+                    parsed_base.scheme,
+                    parsed_base.netloc,
+                    combined_path,
+                    parsed_req.query,
+                    "",
+                )
+            )
+    except Exception:
+        pass
+    return request_url
 
 
 def _extract_safe_headers(request) -> dict[str, str]:
@@ -26,6 +58,7 @@ def _extract_safe_headers(request) -> dict[str, str]:
         "x-twilio-signature",
         "x-twilio-email-event-webhook-signature",
         "x-twilio-email-event-webhook-timestamp",
+        "x-hub-signature-256",
         "content-type",
         "user-agent",
     }
@@ -88,7 +121,7 @@ def _handle_twilio_webhook(
         )
 
     provider = build_provider_for_connection(connection)
-    full_url = request.build_absolute_uri()
+    full_url = _resolve_public_webhook_url(request)
     if not provider.verify_signature(
         payload=payload_dict,
         headers=request.headers,
@@ -168,7 +201,7 @@ class SendGridWebhookView(APIView):
         if not provider.verify_signature(
             payload=raw_bytes,
             headers=request.headers,
-            url=request.build_absolute_uri(),
+            url=_resolve_public_webhook_url(request),
         ):
             return Response(
                 {"detail": "Invalid SendGrid webhook signature."},
@@ -221,5 +254,61 @@ class SendGridWebhookView(APIView):
 
         return Response(
             {"status": "accepted", "webhook_event_id": event_id_str},
+            status=status.HTTP_200_OK,
+        )
+
+
+class MetaWebhookView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    parser_classes = [JSONParser]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(name="hub.mode", type=str, location=OpenApiParameter.QUERY, required=False),
+            OpenApiParameter(name="hub.verify_token", type=str, location=OpenApiParameter.QUERY, required=False),
+            OpenApiParameter(name="hub.challenge", type=str, location=OpenApiParameter.QUERY, required=False),
+        ],
+        responses={200: str},
+    )
+    def get(self, request):
+        mode = str(request.query_params.get("hub.mode") or "")
+        token = str(request.query_params.get("hub.verify_token") or "")
+        challenge = str(request.query_params.get("hub.challenge") or "")
+        expected_token = str(getattr(settings, "META_WEBHOOK_VERIFY_TOKEN", "") or "")
+
+        if (
+            mode == "subscribe"
+            and expected_token
+            and hmac.compare_digest(token.encode("utf-8"), expected_token.encode("utf-8"))
+        ):
+            return HttpResponse(challenge, content_type="text/plain", status=status.HTTP_200_OK)
+
+        return Response(
+            {"detail": "Invalid Meta webhook verification token."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    @extend_schema(
+        request=None,
+        responses={200: WebhookAckSerializer},
+    )
+    def post(self, request):
+        provider = get_meta_provider()
+        raw_bytes = request.body
+        if not provider.verify_signature(
+            payload=raw_bytes,
+            headers=request.headers,
+            url=_resolve_public_webhook_url(request),
+        ):
+            return Response(
+                {"detail": "Invalid Meta webhook signature."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        changes = provider.parse_webhook_changes(request.data)
+        created_events = ingest_meta_webhook_changes(changes)
+        return Response(
+            {"status": "accepted", "events_created": len(created_events)},
             status=status.HTTP_200_OK,
         )

@@ -2,12 +2,18 @@ from django.urls import path
 from integrations.models import InboundWebhookEvent
 from messaging.views import EmailUnsubscribeConfirmView
 from webhooks.views import (
+    MetaWebhookView,
     SendGridWebhookView,
     TwilioSMSWebhookView,
     TwilioWhatsAppWebhookView,
 )
 
 urlpatterns = [
+    path(
+        "meta/",
+        MetaWebhookView.as_view(),
+        name="webhook-meta",
+    ),
     path(
         "twilio/sms/",
         TwilioSMSWebhookView.as_view(),

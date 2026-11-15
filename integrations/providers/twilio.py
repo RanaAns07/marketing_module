@@ -6,6 +6,8 @@ import json
 import re
 from typing import Any
 import uuid
+from urllib.parse import urlsplit
+from django.conf import settings
 import requests
 from integrations.providers.base import (
     NormalizedInboundMessage,
@@ -44,20 +46,12 @@ def ensure_whatsapp_prefix(raw_number: str) -> str:
     return f"whatsapp:{clean}"
 
 
-def verify_twilio_signature(
-    *,
+def _compute_twilio_sig(
     auth_token: str,
-    url: str,
+    target_url: str,
     payload: Mapping[str, Any] | bytes | str,
-    headers: Mapping[str, str],
-) -> bool:
-    if not auth_token or not url:
-        return False
-    provided_sig = _get_header_case_insensitive(headers, "X-Twilio-Signature").strip()
-    if not provided_sig:
-        return False
-
-    data_str = url
+) -> str:
+    data_str = target_url
     if isinstance(payload, Mapping):
         for key in sorted(payload.keys()):
             val = payload[key]
@@ -72,8 +66,36 @@ def verify_twilio_signature(
         data_str.encode("utf-8"),
         hashlib.sha1,
     ).digest()
-    expected_sig = base64.b64encode(digest).decode("utf-8")
-    return hmac.compare_digest(expected_sig, provided_sig)
+    return base64.b64encode(digest).decode("utf-8")
+
+
+def verify_twilio_signature(
+    *,
+    auth_token: str,
+    url: str,
+    payload: Mapping[str, Any] | bytes | str,
+    headers: Mapping[str, str],
+) -> bool:
+    if not auth_token or not url:
+        return False
+    provided_sig = _get_header_case_insensitive(headers, "X-Twilio-Signature").strip()
+    if not provided_sig:
+        return False
+
+    candidate_urls: list[str] = [url]
+    public_base = str(getattr(settings, "PUBLIC_BASE_URL", "") or "").strip().rstrip("/")
+    if public_base:
+        parsed = urlsplit(url)
+        path_and_query = parsed.path + (f"?{parsed.query}" if parsed.query else "")
+        rebuilt = f"{public_base}{path_and_query}"
+        if rebuilt not in candidate_urls:
+            candidate_urls.insert(0, rebuilt)
+
+    for candidate in candidate_urls:
+        expected_sig = _compute_twilio_sig(auth_token, candidate, payload)
+        if hmac.compare_digest(expected_sig, provided_sig):
+            return True
+    return False
 
 
 def _map_twilio_status(raw_status: str) -> str:

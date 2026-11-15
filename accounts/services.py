@@ -434,6 +434,42 @@ def select_next_round_robin_member(marketers_only: bool = True) -> Membership | 
 
 
 @transaction.atomic
+def resolve_tenant_lead_assignee(
+    *,
+    source_page: str = "",
+    source_form: str = "",
+    tag_names: list[str] | None = None,
+) -> Membership | None:
+    tenant = require_tenant()
+    if tenant.assignment_mode == Tenant.AssignmentMode.ROUND_ROBIN:
+        return select_next_round_robin_member(marketers_only=True)
+
+    if tenant.assignment_mode == Tenant.AssignmentMode.BY_SOURCE:
+        rules = (tenant.settings or {}).get("assignment_rules") or {}
+        if isinstance(rules, dict):
+            target_id = (
+                (rules.get("forms") or {}).get(source_form)
+                or (rules.get("pages") or {}).get(source_page)
+            )
+            if not target_id and tag_names:
+                tag_rules = rules.get("tags") or {}
+                for tname in tag_names:
+                    if tname in tag_rules:
+                        target_id = tag_rules[tname]
+                        break
+            if target_id:
+                member = (
+                    Membership.objects.select_related("user", "tenant")
+                    .filter(pk=target_id, is_active=True)
+                    .first()
+                )
+                if member is not None:
+                    return member
+
+    return None
+
+
+@transaction.atomic
 def update_tenant_settings(*, tenant: Tenant, **changes) -> Tenant:
     allowed_fields = {
         "name",

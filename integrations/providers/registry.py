@@ -1,11 +1,17 @@
 from typing import Any
-import uuid
 from rest_framework import status
 from core.context import get_current_tenant_id, tenant_context
 from core.exceptions import ApplicationError
 from integrations.providers.base import (
     EmailProvider,
+    MetaLeadAdsProvider,
     NormalizedInboundMessage,
+    NormalizedMetaLead,
+    NormalizedMetaLeadForm,
+    NormalizedMetaPage,
+    NormalizedMetaQuestion,
+    NormalizedMetaToken,
+    NormalizedMetaWebhookChange,
     NormalizedStatusEvent,
     NormalizedTemplate,
     ProviderDispatchError,
@@ -13,6 +19,7 @@ from integrations.providers.base import (
     SMSProvider,
     WhatsAppProvider,
 )
+from integrations.providers.meta import MetaGraphProvider
 from integrations.providers.sendgrid import SendGridEmailProvider
 from integrations.providers.twilio import (
     TwilioSMSProvider,
@@ -26,11 +33,20 @@ PROVIDER_CLASSES: dict[tuple[str, str], type[EmailProvider | SMSProvider | Whats
     ("whatsapp", "twilio"): TwilioWhatsAppProvider,
 }
 
+META_PROVIDER_CLASSES: dict[str, type[MetaLeadAdsProvider]] = {
+    "meta": MetaGraphProvider,
+}
+
 DEFAULT_PROVIDER_FOR_CHANNEL: dict[str, str] = {
     "email": "sendgrid",
     "sms": "twilio",
     "whatsapp": "twilio",
 }
+
+
+def get_meta_provider(**kwargs: Any) -> MetaLeadAdsProvider:
+    provider_cls = META_PROVIDER_CLASSES["meta"]
+    return provider_cls(**kwargs)
 
 
 def get_provider_class(
@@ -180,7 +196,15 @@ def resolve_twilio_connection_by_number(
 __all__ = [
     "DEFAULT_PROVIDER_FOR_CHANNEL",
     "EmailProvider",
+    "META_PROVIDER_CLASSES",
+    "MetaLeadAdsProvider",
     "NormalizedInboundMessage",
+    "NormalizedMetaLead",
+    "NormalizedMetaLeadForm",
+    "NormalizedMetaPage",
+    "NormalizedMetaQuestion",
+    "NormalizedMetaToken",
+    "NormalizedMetaWebhookChange",
     "NormalizedStatusEvent",
     "NormalizedTemplate",
     "PROVIDER_CLASSES",
@@ -189,6 +213,7 @@ __all__ = [
     "SMSProvider",
     "WhatsAppProvider",
     "build_provider_for_connection",
+    "get_meta_provider",
     "get_provider_class",
     "instantiate_provider",
     "resolve_connection_by_webhook_token",
