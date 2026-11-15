@@ -51,6 +51,7 @@ SUBSCRIBER_TASKS = (
     ("inbox", "inbox.tasks.handle_domain_event", "default"),
     ("notifications", "notifications.tasks.handle_domain_event", "default"),
     ("webhooks", "webhooks.tasks.handle_domain_event", "webhooks"),
+    ("usage", "usage.tasks.handle_domain_event", "default"),
 )
 
 _in_process_subscribers: list[Callable[[dict[str, Any]], None]] = []

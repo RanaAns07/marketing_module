@@ -205,6 +205,10 @@ class Contact(TenantOwnedModel):
                 fields=["tenant", "campaign"],
                 name="idx_contact_tenant_campaign",
             ),
+            models.Index(
+                fields=["tenant", "-acquired_at"],
+                name="idx_contact_tenant_acquired",
+            ),
             GinIndex(
                 fields=["custom_fields"],
                 name="idx_contact_custom_fields_gin",

@@ -222,6 +222,10 @@ class Message(TenantOwnedModel):
                 fields=["tenant", "contact", "channel", "direction", "-created_at"],
                 name="idx_msg_tenant_ct_ch_dir_dt",
             ),
+            models.Index(
+                fields=["tenant", "direction", "-created_at"],
+                name="idx_msg_tenant_dir_created",
+            ),
         ]
 
     def __str__(self) -> str:

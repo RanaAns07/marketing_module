@@ -206,6 +206,7 @@ SPECTACULAR_SETTINGS = {
         "AssignmentStrategyEnum": "core.models.Tenant.AssignmentStrategy",
         "WebhookDeliveryStatusEnum": "webhooks.models.WebhookDelivery.Status",
         "APIKeyScopeEnum": "accounts.models.TenantAPIKey.Scope",
+        "WhatsAppCategoryEnum": "messaging.models.WhatsAppCategory",
     },
 }
 
@@ -250,7 +251,10 @@ CELERY_TASK_ROUTES = {
     "contacts.tasks.*": {"queue": "default"},
     "inbox.tasks.*": {"queue": "default"},
     "accounts.tasks.*": {"queue": "default"},
+    "usage.tasks.*": {"queue": "default"},
 }
+
+DEFAULT_USAGE_CURRENCY = env("DEFAULT_USAGE_CURRENCY", default="USD")
 
 CELERY_BEAT_SCHEDULE = {
     "detect-inactive-leads": {

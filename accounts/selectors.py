@@ -1,5 +1,6 @@
+from typing import Any
 import uuid
-from django.db.models import F, QuerySet
+from django.db.models import Count, F, QuerySet
 from accounts.models import Membership, TenantAPIKey, User
 
 
@@ -38,3 +39,58 @@ def get_available_round_robin_memberships() -> QuerySet[Membership]:
 
 def get_tenant_api_keys_queryset() -> QuerySet[TenantAPIKey]:
     return TenantAPIKey.objects.select_related("tenant").order_by("-created_at")
+
+
+def get_team_workload() -> list[dict[str, Any]]:
+    from contacts.models import Contact
+    from inbox.models import Conversation
+
+    memberships = (
+        Membership.objects.select_related("user")
+        .filter(is_active=True, user__is_active=True)
+        .order_by("user__first_name", "user__last_name", "created_at")
+    )
+    m_list = list(memberships)
+    if not m_list:
+        return []
+
+    leads_counts = {
+        row["assigned_to"]: row["count"]
+        for row in Contact.objects.filter(assigned_to__in=m_list)
+        .values("assigned_to")
+        .annotate(count=Count("id"))
+    }
+    open_convs_counts = {
+        row["assigned_to"]: row["count"]
+        for row in Conversation.objects.filter(
+            assigned_to__in=m_list, status=Conversation.Status.OPEN
+        )
+        .values("assigned_to")
+        .annotate(count=Count("id"))
+    }
+    resolved_convs_counts = {
+        row["assigned_to"]: row["count"]
+        for row in Conversation.objects.filter(
+            assigned_to__in=m_list, status=Conversation.Status.RESOLVED
+        )
+        .values("assigned_to")
+        .annotate(count=Count("id"))
+    }
+
+    workload = []
+    for m in m_list:
+        workload.append(
+            {
+                "membership_id": str(m.id),
+                "user_id": str(m.user_id),
+                "name": m.user.full_name or m.user.email,
+                "email": m.user.email,
+                "role": m.role,
+                "is_available": m.is_available,
+                "assigned_leads_count": leads_counts.get(m.id, 0),
+                "open_conversations_count": open_convs_counts.get(m.id, 0),
+                "resolved_conversations_count": resolved_convs_counts.get(m.id, 0),
+            }
+        )
+    return workload
+
