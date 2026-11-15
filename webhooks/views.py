@@ -15,7 +15,12 @@ from rest_framework.views import APIView
 from accounts.authentication import APIKeyHMACAuthentication
 from accounts.models import TenantAPIKey
 from accounts.permissions import HasAPIKeyScope
-from accounts.throttling import APIKeyRateThrottle, TenantRateThrottle, WebhookRateThrottle
+from accounts.throttling import (
+    APIKeyRateThrottle,
+    TenantRateThrottle,
+    WebhookSignatureAbuseThrottle,
+    record_webhook_signature_failure,
+)
 from contacts.models import Appointment, Contact
 from contacts.serializers import AppointmentSerializer, ContactSerializer
 from contacts.services import (
@@ -194,9 +199,10 @@ def _handle_twilio_webhook(
         connection = resolve_twilio_connection_by_number(channel, to_num, from_num)
 
     if connection is None:
-        return Response(
-            {"detail": "Unable to resolve tenant for Twilio webhook."},
-            status=status.HTTP_403_FORBIDDEN,
+        return record_webhook_signature_failure(
+            request,
+            detail="Unable to resolve tenant for Twilio webhook.",
+            status_code=status.HTTP_403_FORBIDDEN,
         )
 
     provider = build_provider_for_connection(connection)
@@ -206,9 +212,10 @@ def _handle_twilio_webhook(
         headers=request.headers,
         url=full_url,
     ):
-        return Response(
-            {"detail": "Invalid Twilio webhook signature."},
-            status=status.HTTP_403_FORBIDDEN,
+        return record_webhook_signature_failure(
+            request,
+            detail="Invalid Twilio webhook signature.",
+            status_code=status.HTTP_403_FORBIDDEN,
         )
 
     tenant_id_str = str(connection.tenant_id)
@@ -236,7 +243,7 @@ def _handle_twilio_webhook(
 class TwilioSMSWebhookView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
-    throttle_classes = [WebhookRateThrottle]
+    throttle_classes = [WebhookSignatureAbuseThrottle]
     parser_classes = [FormParser, MultiPartParser, JSONParser]
 
     @extend_schema(request=None, responses={200: WebhookAckSerializer})
@@ -251,7 +258,7 @@ class TwilioSMSWebhookView(APIView):
 class TwilioWhatsAppWebhookView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
-    throttle_classes = [WebhookRateThrottle]
+    throttle_classes = [WebhookSignatureAbuseThrottle]
     parser_classes = [FormParser, MultiPartParser, JSONParser]
 
     @extend_schema(request=None, responses={200: WebhookAckSerializer})
@@ -266,7 +273,7 @@ class TwilioWhatsAppWebhookView(APIView):
 class SendGridWebhookView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
-    throttle_classes = [WebhookRateThrottle]
+    throttle_classes = [WebhookSignatureAbuseThrottle]
     parser_classes = [JSONParser, FormParser, MultiPartParser]
 
     @extend_schema(request=None, responses={200: WebhookAckSerializer})
@@ -277,9 +284,10 @@ class SendGridWebhookView(APIView):
 
         connection = resolve_connection_by_webhook_token(webhook_token)
         if connection is None:
-            return Response(
-                {"detail": "Invalid SendGrid webhook token."},
-                status=status.HTTP_403_FORBIDDEN,
+            return record_webhook_signature_failure(
+                request,
+                detail="Invalid SendGrid webhook token.",
+                status_code=status.HTTP_403_FORBIDDEN,
             )
 
         provider = build_provider_for_connection(connection)
@@ -289,9 +297,10 @@ class SendGridWebhookView(APIView):
             headers=request.headers,
             url=_resolve_public_webhook_url(request),
         ):
-            return Response(
-                {"detail": "Invalid SendGrid webhook signature."},
-                status=status.HTTP_403_FORBIDDEN,
+            return record_webhook_signature_failure(
+                request,
+                detail="Invalid SendGrid webhook signature.",
+                status_code=status.HTTP_403_FORBIDDEN,
             )
 
         parsed_data = request.data
@@ -347,7 +356,7 @@ class SendGridWebhookView(APIView):
 class MetaWebhookView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
-    throttle_classes = [WebhookRateThrottle]
+    throttle_classes = [WebhookSignatureAbuseThrottle]
     parser_classes = [JSONParser]
 
     @extend_schema(
@@ -371,9 +380,10 @@ class MetaWebhookView(APIView):
         ):
             return HttpResponse(challenge, content_type="text/plain", status=status.HTTP_200_OK)
 
-        return Response(
-            {"detail": "Invalid Meta webhook verification token."},
-            status=status.HTTP_403_FORBIDDEN,
+        return record_webhook_signature_failure(
+            request,
+            detail="Invalid Meta webhook verification token.",
+            status_code=status.HTTP_403_FORBIDDEN,
         )
 
     @extend_schema(
@@ -392,9 +402,10 @@ class MetaWebhookView(APIView):
             headers=request.headers,
             url=_resolve_public_webhook_url(request),
         ):
-            return Response(
-                {"detail": "Invalid Meta webhook signature."},
-                status=status.HTTP_403_FORBIDDEN,
+            return record_webhook_signature_failure(
+                request,
+                detail="Invalid Meta webhook signature.",
+                status_code=status.HTTP_403_FORBIDDEN,
             )
 
         changes = provider.parse_webhook_changes(request.data)

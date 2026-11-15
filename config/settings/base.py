@@ -213,6 +213,8 @@ SPECTACULAR_SETTINGS = {
         "WebhookDeliveryStatusEnum": "webhooks.models.WebhookDelivery.Status",
         "APIKeyScopeEnum": "accounts.models.TenantAPIKey.Scope",
         "WhatsAppCategoryEnum": "messaging.models.WhatsAppCategory",
+        "MessageDirectionEnum": "messaging.models.Message.Direction",
+        "UsageDirectionEnum": "usage.models.Direction",
     },
 }
 

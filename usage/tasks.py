@@ -14,7 +14,7 @@ def handle_domain_event(self, tenant_id: str, event: dict[str, Any]) -> dict[str
     if not message_id:
         return {"subscriber": "usage", "status": "ignored_no_message_id"}
 
-    if event_name == EventName.MESSAGE_SENT:
+    if event_name in (EventName.MESSAGE_SENT, EventName.SMS_RECEIVED, EventName.WHATSAPP_RECEIVED):
         rec = record_message_usage(message=message_id)
         return {
             "subscriber": "usage",

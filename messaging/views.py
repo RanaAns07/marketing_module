@@ -10,6 +10,10 @@ from accounts.permissions import (
     IsOwnerOrAdminOrReadOnly,
     IsTenantMember,
 )
+from accounts.throttling import (
+    WebhookSignatureAbuseThrottle,
+    record_webhook_signature_failure,
+)
 from contacts.selectors import get_contact_by_id
 from core.exceptions import ApplicationError
 from core.pagination import KeysetCursorPagination
@@ -377,11 +381,31 @@ class WhatsAppWindowStatusView(APIView):
 class EmailUnsubscribeConfirmView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
+    throttle_classes = [WebhookSignatureAbuseThrottle]
 
     @extend_schema(responses={200: EmailUnsubscribeResponseSerializer})
     def get(self, request, token: str | None = None):
+        content_length = request.META.get("CONTENT_LENGTH")
+        if content_length:
+            try:
+                if int(content_length) > 5 * 1024 * 1024:
+                    return Response(
+                        {"detail": "Request payload exceeds size limit."},
+                        status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    )
+            except (ValueError, TypeError):
+                pass
         effective_token = token or request.query_params.get("token", "")
-        contact = confirm_email_unsubscribe(effective_token)
+        try:
+            contact = confirm_email_unsubscribe(effective_token)
+        except ApplicationError as exc:
+            if exc.code == "invalid_unsubscribe_token":
+                return record_webhook_signature_failure(
+                    request,
+                    detail=exc.detail,
+                    status_code=exc.status_code,
+                )
+            raise exc
         return Response(
             {
                 "status": contact.email_subscription,
@@ -396,12 +420,40 @@ class EmailUnsubscribeConfirmView(APIView):
         responses={200: EmailUnsubscribeResponseSerializer},
     )
     def post(self, request, token: str | None = None):
+        content_length = request.META.get("CONTENT_LENGTH")
+        if content_length:
+            try:
+                if int(content_length) > 5 * 1024 * 1024:
+                    return Response(
+                        {"detail": "Request payload exceeds size limit."},
+                        status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    )
+            except (ValueError, TypeError):
+                pass
+        try:
+            body = getattr(request, "_body", None) or getattr(request, "body", None)
+            if body and len(body) > 5 * 1024 * 1024:
+                return Response(
+                    {"detail": "Request payload exceeds size limit."},
+                    status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                )
+        except Exception:
+            pass
         effective_token = token
         if not effective_token:
             serializer = EmailUnsubscribeConfirmSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             effective_token = serializer.validated_data["token"]
-        contact = confirm_email_unsubscribe(effective_token)
+        try:
+            contact = confirm_email_unsubscribe(effective_token)
+        except ApplicationError as exc:
+            if exc.code == "invalid_unsubscribe_token":
+                return record_webhook_signature_failure(
+                    request,
+                    detail=exc.detail,
+                    status_code=exc.status_code,
+                )
+            raise exc
         return Response(
             {
                 "status": contact.email_subscription,

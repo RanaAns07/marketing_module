@@ -326,7 +326,11 @@ def get_messaging_report(
     )
 
     outbound_qs = base_qs.filter(direction=Message.Direction.OUT)
+    inbound_qs = base_qs.filter(direction=Message.Direction.IN)
     sent_count = outbound_qs.count()
+    outbound_count = sent_count
+    received_count = inbound_qs.count()
+    inbound_count = received_count
     delivered_count = outbound_qs.filter(status__in=[Message.Status.DELIVERED, Message.Status.READ]).count()
     failed_count = outbound_qs.filter(status__in=[Message.Status.FAILED, Message.Status.UNDELIVERED]).count()
     bounce_count = outbound_qs.filter(status=Message.Status.BOUNCED).count()
@@ -355,6 +359,9 @@ def get_messaging_report(
         "end_date": end_dt_utc.isoformat(),
         "by_channel_and_direction": by_channel_and_dir,
         "sent_count": sent_count,
+        "outbound_count": outbound_count,
+        "received_count": received_count,
+        "inbound_count": inbound_count,
         "delivered_count": delivered_count,
         "failed_count": failed_count,
         "bounce_count": bounce_count,
@@ -400,6 +407,7 @@ def get_dashboard_data(
         msg_qs = msg_qs.filter(contact__assigned_to=membership)
 
     messages_sent_count = msg_qs.filter(direction=Message.Direction.OUT).count()
+    messages_received_count = msg_qs.filter(direction=Message.Direction.IN).count()
     delivered_count = msg_qs.filter(
         direction=Message.Direction.OUT,
         status__in=[Message.Status.DELIVERED, Message.Status.READ],
@@ -462,6 +470,13 @@ def get_dashboard_data(
             "drill_down": {
                 "resource": "messages",
                 "params": {"direction": "out", "from_date": start_iso, "to_date": end_iso},
+            },
+        },
+        "messages_received": {
+            "value": messages_received_count,
+            "drill_down": {
+                "resource": "messages",
+                "params": {"direction": "in", "from_date": start_iso, "to_date": end_iso},
             },
         },
         "delivery_rate": {

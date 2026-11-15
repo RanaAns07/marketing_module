@@ -17,6 +17,7 @@ class UsageRecordSerializer(TenantScopedSerializer):
             "tenant_id",
             "message_id",
             "channel",
+            "direction",
             "quantity",
             "destination_country",
             "whatsapp_category",
@@ -42,6 +43,7 @@ class RateCardSerializer(serializers.ModelSerializer):
             "id",
             "tenant_id",
             "channel",
+            "direction",
             "destination_country",
             "whatsapp_category",
             "unit_cost",
@@ -55,11 +57,17 @@ class RateCardSerializer(serializers.ModelSerializer):
 
 class ChannelUsageSummarySerializer(serializers.Serializer):
     message_count = serializers.IntegerField()
+    outbound_count = serializers.IntegerField(required=False)
+    inbound_count = serializers.IntegerField(required=False)
     sms_segments = serializers.IntegerField()
+    outbound_segments = serializers.IntegerField(required=False)
+    inbound_segments = serializers.IntegerField(required=False)
     delivered_count = serializers.IntegerField()
     failed_count = serializers.IntegerField()
     bounced_count = serializers.IntegerField()
     estimated_cost = serializers.FloatField()
+    outbound_cost = serializers.FloatField(required=False)
+    inbound_cost = serializers.FloatField(required=False)
     currency = serializers.CharField()
     is_estimate = serializers.BooleanField(default=True, required=False)
     estimate = serializers.BooleanField(default=True, required=False)
@@ -73,10 +81,16 @@ class UsageSummarySerializer(serializers.Serializer):
     disclaimer = serializers.CharField()
     currency = serializers.CharField()
     total_messages = serializers.IntegerField()
+    total_outbound_messages = serializers.IntegerField(required=False)
+    total_inbound_messages = serializers.IntegerField(required=False)
     total_sms_segments = serializers.IntegerField()
+    total_outbound_sms_segments = serializers.IntegerField(required=False)
+    total_inbound_sms_segments = serializers.IntegerField(required=False)
     total_delivered = serializers.IntegerField()
     total_failed = serializers.IntegerField()
     total_bounced = serializers.IntegerField()
     total_estimated_cost = serializers.FloatField()
+    total_outbound_cost = serializers.FloatField(required=False)
+    total_inbound_cost = serializers.FloatField(required=False)
     by_channel = serializers.DictField(child=ChannelUsageSummarySerializer())
     delivery_outcomes = serializers.DictField(child=serializers.IntegerField())

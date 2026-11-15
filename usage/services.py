@@ -27,7 +27,10 @@ def record_message_usage(*, message: Message | str) -> UsageRecord | None:
             .first()
         )
 
-    if msg_obj is None or msg_obj.direction == Message.Direction.IN:
+    if msg_obj is None:
+        return None
+
+    if msg_obj.channel == Channel.EMAIL and msg_obj.direction == Message.Direction.IN:
         return None
 
     existing = (
@@ -39,11 +42,17 @@ def record_message_usage(*, message: Message | str) -> UsageRecord | None:
         return existing
 
     channel = msg_obj.channel
+    direction = (
+        UsageRecord.Direction.INBOUND
+        if msg_obj.direction == Message.Direction.IN
+        else UsageRecord.Direction.OUTBOUND
+    )
     country = (
         msg_obj.destination_country
         or (msg_obj.metadata or {}).get("destination_country")
         or ""
     ).strip().upper()[:2]
+
     wa_category = (
         msg_obj.whatsapp_category
         or (msg_obj.metadata or {}).get("category")
@@ -51,13 +60,16 @@ def record_message_usage(*, message: Message | str) -> UsageRecord | None:
         or ""
     ).strip().lower()
 
-    if channel == Channel.WHATSAPP and not wa_category:
-        if msg_obj.template and msg_obj.template.whatsapp_category:
-            wa_category = str(msg_obj.template.whatsapp_category).strip().lower()
-        elif msg_obj.template:
-            wa_category = WhatsAppCategory.MARKETING
-        else:
+    if channel == Channel.WHATSAPP:
+        if direction == UsageRecord.Direction.INBOUND:
             wa_category = WhatsAppCategory.SERVICE
+        elif not wa_category:
+            if msg_obj.template and msg_obj.template.whatsapp_category:
+                wa_category = str(msg_obj.template.whatsapp_category).strip().lower()
+            elif msg_obj.template:
+                wa_category = WhatsAppCategory.MARKETING
+            else:
+                wa_category = WhatsAppCategory.SERVICE
 
     if channel == Channel.SMS:
         raw_seg = msg_obj.segments or (msg_obj.metadata or {}).get("segments") or 1
@@ -69,7 +81,8 @@ def record_message_usage(*, message: Message | str) -> UsageRecord | None:
         quantity = 1
 
     failed_before_provider = (
-        msg_obj.status in (Message.Status.FAILED, Message.Status.UNDELIVERED)
+        direction == UsageRecord.Direction.OUTBOUND
+        and msg_obj.status in (Message.Status.FAILED, Message.Status.UNDELIVERED)
         and not bool(msg_obj.provider_message_id)
     )
 
@@ -83,6 +96,7 @@ def record_message_usage(*, message: Message | str) -> UsageRecord | None:
         matched_rate = resolve_rate_card(
             tenant=msg_obj.tenant,
             channel=channel,
+            direction=direction,
             country=country,
             category=wa_category,
         )
@@ -102,6 +116,7 @@ def record_message_usage(*, message: Message | str) -> UsageRecord | None:
             tenant=msg_obj.tenant,
             message=msg_obj,
             channel=channel,
+            direction=direction,
             quantity=quantity,
             destination_country=country,
             whatsapp_category=wa_category,
@@ -149,6 +164,7 @@ def create_tenant_rate_card(
     *,
     channel: str,
     unit_cost: Decimal | float | str,
+    direction: str = RateCard.Direction.OUTBOUND,
     currency: str = "USD",
     destination_country: str = "",
     whatsapp_category: str = "",
@@ -156,6 +172,7 @@ def create_tenant_rate_card(
 ) -> RateCard:
     tenant = require_tenant()
     norm_ch = (channel or "").strip().lower()
+    norm_dir = (direction or RateCard.Direction.OUTBOUND).strip().lower()
     norm_ct = (destination_country or "").strip().upper()[:2]
     norm_cat = (whatsapp_category or "").strip().lower()
     cost_dec = Decimal(str(unit_cost)).quantize(Decimal("0.00001"))
@@ -163,17 +180,19 @@ def create_tenant_rate_card(
     if RateCard.objects.filter(
         tenant=tenant,
         channel=norm_ch,
+        direction=norm_dir,
         destination_country=norm_ct,
         whatsapp_category=norm_cat,
     ).exists():
         raise ApplicationError(
-            detail="A rate card override with this channel, country, and category already exists.",
+            detail="A rate card override with this channel, direction, country, and category already exists.",
             code="duplicate_rate_card",
         )
 
     return RateCard.objects.create(
         tenant=tenant,
         channel=norm_ch,
+        direction=norm_dir,
         destination_country=norm_ct,
         whatsapp_category=norm_cat,
         unit_cost=cost_dec,
@@ -193,6 +212,8 @@ def update_tenant_rate_card(
 
     if "unit_cost" in changes and changes["unit_cost"] is not None:
         locked.unit_cost = Decimal(str(changes["unit_cost"])).quantize(Decimal("0.00001"))
+    if "direction" in changes and changes["direction"] is not None:
+        locked.direction = str(changes["direction"]).strip().lower()
     if "currency" in changes and changes["currency"] is not None:
         locked.currency = str(changes["currency"]).strip().upper()
     if "destination_country" in changes and changes["destination_country"] is not None:

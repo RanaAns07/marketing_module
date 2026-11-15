@@ -7,39 +7,59 @@ from usage.models import RateCard
 GLOBAL_RATE_DEFAULTS = [
     {
         "channel": Channel.EMAIL,
+        "direction": RateCard.Direction.OUTBOUND,
         "destination_country": "",
         "whatsapp_category": "",
         "unit_cost": Decimal("0.00100"),
     },
     {
         "channel": Channel.SMS,
+        "direction": RateCard.Direction.OUTBOUND,
         "destination_country": "",
         "whatsapp_category": "",
         "unit_cost": Decimal("0.01500"),
     },
     {
+        "channel": Channel.SMS,
+        "direction": RateCard.Direction.INBOUND,
+        "destination_country": "",
+        "whatsapp_category": "",
+        "unit_cost": Decimal("0.00750"),
+    },
+    {
         "channel": Channel.WHATSAPP,
+        "direction": RateCard.Direction.OUTBOUND,
         "destination_country": "",
         "whatsapp_category": WhatsAppCategory.MARKETING,
         "unit_cost": Decimal("0.05000"),
     },
     {
         "channel": Channel.WHATSAPP,
+        "direction": RateCard.Direction.OUTBOUND,
         "destination_country": "",
         "whatsapp_category": WhatsAppCategory.UTILITY,
         "unit_cost": Decimal("0.03000"),
     },
     {
         "channel": Channel.WHATSAPP,
+        "direction": RateCard.Direction.OUTBOUND,
         "destination_country": "",
         "whatsapp_category": WhatsAppCategory.AUTHENTICATION,
         "unit_cost": Decimal("0.03000"),
     },
     {
         "channel": Channel.WHATSAPP,
+        "direction": RateCard.Direction.OUTBOUND,
         "destination_country": "",
         "whatsapp_category": WhatsAppCategory.SERVICE,
         "unit_cost": Decimal("0.01500"),
+    },
+    {
+        "channel": Channel.WHATSAPP,
+        "direction": RateCard.Direction.INBOUND,
+        "destination_country": "",
+        "whatsapp_category": WhatsAppCategory.SERVICE,
+        "unit_cost": Decimal("0.00500"),
     },
 ]
 
@@ -51,6 +71,7 @@ def seed_global_rate_cards() -> int:
         obj, created = RateCard.objects.get_or_create(
             tenant=None,
             channel=item["channel"],
+            direction=item["direction"],
             destination_country=item["destination_country"],
             whatsapp_category=item["whatsapp_category"],
             defaults={

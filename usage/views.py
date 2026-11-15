@@ -152,6 +152,7 @@ class TenantRateCardViewSet(viewsets.ModelViewSet):
         instance = create_tenant_rate_card(
             channel=v["channel"],
             unit_cost=v["unit_cost"],
+            direction=v.get("direction", RateCard.Direction.OUTBOUND),
             currency=v.get("currency", "USD"),
             destination_country=v.get("destination_country", ""),
             whatsapp_category=v.get("whatsapp_category", ""),
@@ -207,6 +208,7 @@ class UsageExportCSVView(APIView):
                     "Record ID",
                     "Message ID",
                     "Channel",
+                    "Direction",
                     "Quantity",
                     "Destination Country",
                     "WhatsApp Category",
@@ -227,6 +229,7 @@ class UsageExportCSVView(APIView):
                         str(rec.id),
                         str(rec.message_id),
                         rec.channel,
+                        rec.direction,
                         rec.quantity,
                         rec.destination_country,
                         rec.whatsapp_category,

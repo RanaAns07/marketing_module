@@ -103,8 +103,15 @@ The codebase maps to the 18 sections of `docs/product_guide.pdf`:
 
 3. Seed default global rate cards:
    ```bash
-   python manage.py shell -c "from usage.services import seed_default_rate_cards; seed_default_rate_cards()"
+   python manage.py seed_rate_cards
    ```
+
+### Rate Cards & Usage Metering
+Rate cards define applicable unit costs by `channel`, `direction` (`outbound` or `inbound`), destination `country`, and `whatsapp_category`.
+- **Unit Cost Formula**: `Total Cost = Quantity × Applicable Unit Cost`. The platform fee is included directly in the stored unit cost at the rate card level.
+- **WhatsApp Pricing Requirement**: Tenant owners must enter provider fee plus Meta fee per category (Marketing, Utility, Authentication, Service) and destination country when configuring tenant rate card overrides.
+- **Inbound Metering**: Inbound WhatsApp messages are metered under category `service` (quantity 1). Inbound SMS messages are metered by billable segments. Inbound email is unbilled.
+
 
 4. Start development web server:
    ```bash
