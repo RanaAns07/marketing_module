@@ -1,0 +1,221 @@
+Execution Mode: DEEP
+
+--------------------------------------------------
+
+TICKET: OTP-Based User Registration + Password Reset System
+
+--------------------------------------------------
+
+OBJECTIVE:
+
+Build a secure, scalable authentication flow with:
+1. OTP-based user registration (pre-account creation)
+2. OTP-based password reset system
+3. Secure OTP storage with hashing, expiry, and audit tracking
+4. Email-based OTP delivery using HTML templates
+
+System must be production-ready, race-condition safe, and follow strict service-layer architecture.
+
+--------------------------------------------------
+
+CORE ARCHITECTURE RULES (MUST FOLLOW):
+
+• All business logic → services.py  
+• All queries → selectors.py  
+• Views → thin layer only  
+• Serializers → validation only  
+• No DB logic inside serializers or views  
+• Follow .ai/architecture.md strictly  
+
+--------------------------------------------------
+
+1. PENDING REGISTRATION FLOW
+
+Create model: PendingRegistration
+
+Requirements:
+- email (unique identifier)
+- first_name (required)
+- last_name (required)
+- password (hashed before storage)
+- optional user fields (stored only if provided)
+- otp_reference (FK to EmailOTP)
+- created_at
+
+Flow:
+- Step 1: Save user data in PendingRegistration
+- Step 2: Generate OTP via EmailOTP system
+- Step 3: Link OTP to PendingRegistration
+- Step 4: Send OTP email (async-safe)
+
+--------------------------------------------------
+
+2. EMAIL OTP SYSTEM (NEW TABLE REQUIRED)
+
+Create model:
+
+EmailOTP:
+- email (indexed)
+- otp_hash (store hashed OTP only)
+- purpose (REGISTRATION | PASSWORD_RESET)
+- created_at
+- expires_at
+- attempts (default 0)
+- used (boolean)
+- ip_address (optional)
+- user_agent (optional)
+
+Rules:
+• OTP must NEVER be stored in plain text
+• OTP must expire after 10 minutes
+• OTP must be single-use
+• Track failed attempts
+• Prevent reuse of OTP
+
+--------------------------------------------------
+
+3. REGISTRATION API (STEP 1)
+
+Input:
+- first_name (required)
+- last_name (required)
+- email (required)
+- password (required)
+- optional user fields
+
+Behavior:
+- Create/update PendingRegistration
+- Generate OTP
+- Store OTP in EmailOTP table (hashed)
+- Send formatted HTML email (registration template)
+- Do NOT create User yet
+
+--------------------------------------------------
+
+4. OTP VERIFICATION API (REGISTRATION)
+
+Input:
+- email
+- otp
+
+Behavior:
+- Validate OTP from EmailOTP table
+- Use:
+  • transaction.atomic
+  • select_for_update
+- Check expiry
+- Check attempts limit
+- On success:
+  • Create User
+  • Transfer PendingRegistration data
+  • Delete PendingRegistration
+  • Mark OTP as used
+
+--------------------------------------------------
+
+5. PASSWORD RESET FLOW
+
+Step 1:
+- User requests password reset via email
+- Generate OTP (purpose = PASSWORD_RESET)
+- Store in EmailOTP
+- Send password reset HTML email
+
+Step 2:
+- Verify OTP
+- Allow password update
+- Invalidate OTP after success
+
+--------------------------------------------------
+
+6. EMAIL TEMPLATES (MANDATORY)
+
+A. Registration OTP Email (HTML)
+- Clean styled HTML email
+- Shows OTP code
+- Expiry message (10 minutes)
+- Branded header
+
+B. Password Reset OTP Email (HTML)
+- Different color theme (red emphasis)
+- Clear password reset message
+- OTP prominently displayed
+- Expiry notice
+
+Both must:
+• Be reusable templates
+• Use {{ code }} placeholder
+• Be stored in templates/ directory
+
+--------------------------------------------------
+
+NON-FUNCTIONAL REQUIREMENTS:
+
+• No user creation before OTP verification  
+• Prevent duplicate accounts  
+• Prevent OTP reuse  
+• Prevent race conditions  
+• Ensure atomic operations  
+• Ensure audit tracking  
+
+--------------------------------------------------
+
+SECURITY REQUIREMENTS:
+
+• OTP must be hashed (never plain text stored)
+• Limit OTP verification attempts
+• Expire OTP after 10 minutes
+• Bind OTP to email + purpose
+• Track IP and user-agent
+
+--------------------------------------------------
+
+PERFORMANCE REQUIREMENTS:
+
+• No N+1 queries  
+• No redundant DB hits  
+• Use select_related/prefetch_related where needed  
+• Keep queries minimal  
+• Avoid serializer DB calls  
+
+--------------------------------------------------
+
+EXPECTED OUTPUT:
+
+1. Models:
+   - PendingRegistration
+   - EmailOTP
+   - OTPPurpose enum
+
+2. Services:
+   - register_user()
+   - verify_registration_otp()
+   - send_otp_email()
+   - password_reset_request()
+   - password_reset_verify()
+
+3. Email system:
+   - HTML templates
+   - reusable rendering logic
+
+4. API layer:
+   - Registration API
+   - OTP verification API
+   - Password reset request API
+   - Password reset confirm API
+
+5. Security + transaction handling
+
+6. Query optimization explanation
+
+7. Edge cases and failure scenarios
+
+--------------------------------------------------
+
+CRITICAL RULES:
+
+• Do NOT create User before OTP verification  
+• Do NOT store raw OTP  
+• Do NOT mix business logic in serializers  
+• Do NOT skip transaction safety  
+• Do NOT bypass EmailOTP table  
