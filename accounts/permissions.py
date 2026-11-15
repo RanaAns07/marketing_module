@@ -1,6 +1,8 @@
+from collections.abc import Mapping
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 from accounts.authentication import resolve_request_tenant_membership
-from accounts.models import Membership
+from accounts.models import Membership, TenantAPIKey
 from core.context import set_current_tenant
 from core.exceptions import TenantContextRequired
 
@@ -67,3 +69,53 @@ class CanAccessContactObject(IsTenantMember):
             return True
         assigned_id = getattr(obj, "assigned_to_id", None)
         return assigned_id in (membership.id, membership.user_id)
+
+
+def _reject_tenant_identifiers_in_api_key_request(request) -> None:
+    raw_header = request.headers.get("X-Tenant") or request.META.get("HTTP_X_TENANT")
+    if raw_header:
+        raise PermissionDenied("X-Tenant header is not permitted on API key requests.")
+
+    query_params = getattr(request, "query_params", None) or {}
+    if "tenant" in query_params or "tenant_id" in query_params:
+        raise PermissionDenied("Tenant identifiers are not permitted in query parameters for API key requests.")
+
+    if request.method not in SAFE_METHODS:
+        data = getattr(request, "data", None)
+        if isinstance(data, Mapping) and ("tenant" in data or "tenant_id" in data):
+            raise PermissionDenied("Tenant identifiers are not permitted in the request payload for API key requests.")
+
+
+class HasAPIKeyScope(BasePermission):
+    message = "Valid API key with the required scope is required."
+
+    def has_permission(self, request, view) -> bool:
+        api_key = getattr(request, "api_key", None)
+        if api_key is None and isinstance(getattr(request, "auth", None), TenantAPIKey):
+            api_key = request.auth
+            request.api_key = api_key
+
+        if api_key is not None:
+            if not api_key.is_currently_valid() or not api_key.tenant.is_active:
+                return False
+
+            _reject_tenant_identifiers_in_api_key_request(request)
+            request.tenant = api_key.tenant
+            set_current_tenant(api_key.tenant)
+
+            scopes_by_method = getattr(view, "required_scopes_by_method", None)
+            required_scope = (
+                scopes_by_method.get(request.method)
+                if isinstance(scopes_by_method, Mapping)
+                else None
+            ) or getattr(view, "required_scope", None)
+
+            if required_scope and not api_key.has_scope(required_scope):
+                raise PermissionDenied(f"API key lacks required scope '{required_scope}'.")
+
+            return True
+
+        if getattr(view, "allow_jwt_owner_admin", False):
+            return IsOwnerOrAdmin().has_permission(request, view)
+
+        return False

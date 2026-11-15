@@ -51,6 +51,10 @@ EVENT_TO_TRIGGER_TYPE: dict[str, str] = {
 
 PURCHASE_EXTERNAL_TYPES = frozenset(
     {
+        "package.purchased",
+        "subscription.created",
+        "subscription.renewed",
+        "payment.succeeded",
         "purchase",
         "conversion",
         "order_completed",
@@ -686,6 +690,324 @@ class EnrollmentService:
             eid_str = str(enr.id)
             transaction.on_commit(lambda t=tid_str, e=eid_str: _enqueue_enrollment_execution(t, e))
         return resumed
+
+    @staticmethod
+    @transaction.atomic
+    def complete_enrollment(
+        *,
+        enrollment: WorkflowEnrollment,
+        reason: str = "external_directive",
+        actor: User | None = None,
+    ) -> WorkflowEnrollment:
+        locked = (
+            WorkflowEnrollment.objects.select_for_update()
+            .select_related("workflow", "contact")
+            .get(pk=enrollment.pk)
+        )
+        if locked.status == WorkflowEnrollment.Status.COMPLETED:
+            return locked
+
+        now = timezone.now()
+        locked.status = WorkflowEnrollment.Status.COMPLETED
+        locked.paused_reason = reason
+        locked.current_step_key = ""
+        locked.waiting_for_event = {}
+        locked.next_run_at = None
+        locked.locked_at = None
+        locked.finished_at = now
+        locked.save(
+            update_fields=[
+                "status",
+                "paused_reason",
+                "current_step_key",
+                "waiting_for_event",
+                "next_run_at",
+                "locked_at",
+                "finished_at",
+                "updated_at",
+            ]
+        )
+
+        log_contact_activity(
+            contact=locked.contact,
+            actor=actor,
+            activity_type=Activity.ActivityType.WORKFLOW_ACTION,
+            description=f"Workflow '{locked.workflow.name}' marked completed ({reason}).",
+            metadata={
+                "workflow_id": str(locked.workflow_id),
+                "workflow_name": locked.workflow.name,
+                "enrollment_id": str(locked.id),
+                "reason": reason,
+            },
+            touch_activity=False,
+        )
+        return locked
+
+    @staticmethod
+    @transaction.atomic
+    def update_enrollment(
+        *,
+        enrollment: WorkflowEnrollment,
+        step_key: str | None = None,
+        delay_minutes: float | int | None = None,
+        contact_fields: dict[str, Any] | None = None,
+        actor: User | None = None,
+    ) -> WorkflowEnrollment:
+        tenant_id = require_tenant_id()
+        locked = (
+            WorkflowEnrollment.objects.select_for_update()
+            .select_related("workflow", "contact")
+            .get(pk=enrollment.pk)
+        )
+
+        if contact_fields is not None:
+            if not isinstance(contact_fields, dict):
+                raise ApplicationError(
+                    detail="Directive contact_fields must be a JSON object.",
+                    code="invalid_directive_contact_fields",
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+            changes: dict[str, Any] = {}
+            custom_updates: dict[str, Any] = dict(contact_fields.get("custom_fields") or {})
+            for k, v in contact_fields.items():
+                if k == "custom_fields":
+                    continue
+                clean_k = str(k).strip()
+                if clean_k.startswith("custom_fields."):
+                    custom_updates[clean_k[len("custom_fields."):]] = v
+                elif clean_k in STANDARD_CONTACT_FIELDS or clean_k == "tags":
+                    changes[clean_k] = v
+                else:
+                    custom_updates[clean_k] = v
+            if custom_updates:
+                changes["custom_fields"] = custom_updates
+            if changes:
+                ContactService.update_contact(contact=locked.contact, actor=actor, **changes)
+
+        update_fields = ["updated_at"]
+        if step_key is not None:
+            clean_step = str(step_key).strip()
+            if not clean_step or not WorkflowStep.objects.filter(
+                workflow=locked.workflow,
+                key=clean_step,
+            ).exists():
+                raise ApplicationError(
+                    detail=f"Step '{clean_step}' does not exist in workflow '{locked.workflow.name}'.",
+                    code="invalid_directive_step_key",
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+            locked.current_step_key = clean_step
+            locked.waiting_for_event = {}
+            update_fields.extend(["current_step_key", "waiting_for_event"])
+
+        should_enqueue_now = False
+        if delay_minutes is not None:
+            try:
+                mins = float(delay_minutes)
+            except (ValueError, TypeError) as exc:
+                raise ApplicationError(
+                    detail="Directive delay_minutes must be a valid number.",
+                    code="invalid_directive_delay",
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                ) from exc
+            if mins < 0:
+                raise ApplicationError(
+                    detail="Directive delay_minutes cannot be negative.",
+                    code="invalid_directive_delay",
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+            locked.next_run_at = timezone.now() + timedelta(minutes=mins)
+            locked.waiting_for_event = {}
+            update_fields.extend(["next_run_at", "waiting_for_event"])
+            if mins == 0 and locked.status == WorkflowEnrollment.Status.ACTIVE:
+                should_enqueue_now = True
+        elif step_key is not None and locked.status == WorkflowEnrollment.Status.ACTIVE:
+            locked.next_run_at = timezone.now()
+            update_fields.append("next_run_at")
+            should_enqueue_now = True
+
+        locked.locked_at = None
+        update_fields.append("locked_at")
+        locked.save(update_fields=list(dict.fromkeys(update_fields)))
+
+        log_contact_activity(
+            contact=locked.contact,
+            actor=actor,
+            activity_type=Activity.ActivityType.WORKFLOW_ACTION,
+            description=f"Workflow '{locked.workflow.name}' enrollment updated via directive.",
+            metadata={
+                "workflow_id": str(locked.workflow_id),
+                "workflow_name": locked.workflow.name,
+                "enrollment_id": str(locked.id),
+                "current_step_key": locked.current_step_key,
+                "next_run_at": locked.next_run_at.isoformat() if locked.next_run_at else None,
+            },
+            touch_activity=False,
+        )
+
+        if should_enqueue_now:
+            tid_str = str(tenant_id)
+            eid_str = str(locked.id)
+            transaction.on_commit(lambda: _enqueue_enrollment_execution(tid_str, eid_str))
+
+        return locked
+
+    @staticmethod
+    @transaction.atomic
+    def apply_directive(
+        *,
+        contact: Contact,
+        directive: dict[str, Any],
+        actor: User | None = None,
+    ) -> dict[str, Any]:
+        if not isinstance(directive, dict):
+            raise ApplicationError(
+                detail="Each automation directive must be a JSON object.",
+                code="invalid_automation_directive",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        action = str(directive.get("action") or "").strip().lower()
+        allowed_actions = {"trigger", "pause", "stop", "complete", "update"}
+        if action not in allowed_actions:
+            raise ApplicationError(
+                detail=f"Invalid automation directive action '{action}'. Must be one of: trigger, pause, stop, complete, update.",
+                code="invalid_automation_directive_action",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        wf_ref = (
+            directive.get("workflow")
+            or directive.get("workflow_id")
+            or directive.get("workflow_name")
+        )
+        if not wf_ref or not str(wf_ref).strip():
+            raise ApplicationError(
+                detail="Automation directive must specify a target 'workflow' (id or name).",
+                code="missing_directive_workflow",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        wf_ref_str = str(wf_ref).strip()
+        parsed_uuid = _parse_uuid(wf_ref_str)
+        if parsed_uuid is not None:
+            workflow = Workflow.objects.prefetch_related("steps").filter(pk=parsed_uuid).first()
+        else:
+            workflow = None
+        if workflow is None:
+            workflow = Workflow.objects.prefetch_related("steps").filter(name__iexact=wf_ref_str).first()
+        if workflow is None:
+            raise ApplicationError(
+                detail=f"Workflow '{wf_ref_str}' not found in the active tenant.",
+                code="directive_workflow_not_found",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if action == "trigger":
+            if workflow.status != Workflow.Status.ACTIVE:
+                raise ApplicationError(
+                    detail=f"Workflow '{workflow.name}' is not active and cannot be triggered.",
+                    code="directive_workflow_not_active",
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+            enr, created = EnrollmentService.enroll(workflow=workflow, contact=contact, actor=actor)
+            return {
+                "action": "trigger",
+                "workflow_id": str(workflow.id),
+                "workflow_name": workflow.name,
+                "enrollment_id": str(enr.id) if enr else None,
+                "enrolled": created,
+                "status": enr.status if enr else "skipped",
+            }
+
+        open_enrollment = (
+            WorkflowEnrollment.objects.select_for_update()
+            .select_related("workflow", "contact")
+            .filter(
+                workflow=workflow,
+                contact=contact,
+                status__in=[WorkflowEnrollment.Status.ACTIVE, WorkflowEnrollment.Status.PAUSED],
+            )
+            .first()
+        )
+        if open_enrollment is None:
+            raise ApplicationError(
+                detail=f"No active or paused enrollment found for contact in workflow '{workflow.name}'.",
+                code="directive_enrollment_not_found",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if action == "pause":
+            updated = EnrollmentService.pause_enrollment(
+                enrollment=open_enrollment,
+                reason="external_directive",
+                actor=actor,
+            )
+            return {
+                "action": "pause",
+                "workflow_id": str(workflow.id),
+                "workflow_name": workflow.name,
+                "enrollment_id": str(updated.id),
+                "status": updated.status,
+            }
+
+        if action == "stop":
+            updated = EnrollmentService.unenroll(
+                enrollment=open_enrollment,
+                reason="external_directive",
+                actor=actor,
+            )
+            return {
+                "action": "stop",
+                "workflow_id": str(workflow.id),
+                "workflow_name": workflow.name,
+                "enrollment_id": str(updated.id),
+                "status": updated.status,
+            }
+
+        if action == "complete":
+            updated = EnrollmentService.complete_enrollment(
+                enrollment=open_enrollment,
+                reason="external_directive",
+                actor=actor,
+            )
+            return {
+                "action": "complete",
+                "workflow_id": str(workflow.id),
+                "workflow_name": workflow.name,
+                "enrollment_id": str(updated.id),
+                "status": updated.status,
+            }
+
+        step_key = directive.get("step_key")
+        delay_minutes = directive.get("delay_minutes")
+        contact_fields = (
+            directive.get("contact_fields")
+            if directive.get("contact_fields") is not None
+            else (directive.get("fields") if directive.get("fields") is not None else directive.get("contact"))
+        )
+        if step_key is None and delay_minutes is None and contact_fields is None:
+            raise ApplicationError(
+                detail="Update directive requires at least one of 'step_key', 'delay_minutes', or 'contact_fields'.",
+                code="invalid_update_directive",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+        updated = EnrollmentService.update_enrollment(
+            enrollment=open_enrollment,
+            step_key=step_key,
+            delay_minutes=delay_minutes,
+            contact_fields=contact_fields,
+            actor=actor,
+        )
+        return {
+            "action": "update",
+            "workflow_id": str(workflow.id),
+            "workflow_name": workflow.name,
+            "enrollment_id": str(updated.id),
+            "status": updated.status,
+            "current_step_key": updated.current_step_key,
+            "next_run_at": updated.next_run_at.isoformat() if updated.next_run_at else None,
+        }
 
 
 def _matches_tag_config(config: dict[str, Any], payload: dict[str, Any]) -> bool:
@@ -1642,6 +1964,7 @@ def execute_action_step(
 
     if subtype == WorkflowStep.Subtype.SEND_OUTBOUND_WEBHOOK:
         webhook_payload = {
+            "endpoint_id": str(cfg.get("endpoint_id") or "") or None,
             "url": str(cfg.get("url") or ""),
             "event_type": str(cfg.get("event_type") or cfg.get("webhook_name") or "workflow_webhook"),
             "workflow_id": str(enrollment.workflow_id),

@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from datetime import timedelta
 import secrets
 from typing import Any
 import uuid
@@ -940,16 +941,131 @@ def update_tenant_settings(*, tenant: Tenant, **changes) -> Tenant:
     return tenant
 
 
+def _validate_api_key_scopes(scopes: Iterable[str] | None) -> list[str]:
+    if scopes is None:
+        return list(TenantAPIKey.Scope.values)
+    valid_set = set(TenantAPIKey.Scope.values)
+    normalized: list[str] = []
+    for item in scopes:
+        clean = str(item).strip()
+        if not clean:
+            continue
+        if clean not in valid_set:
+            raise ApplicationError(
+                detail=f"Invalid API key scope '{clean}'. Allowed scopes: {', '.join(TenantAPIKey.Scope.values)}.",
+                code="invalid_api_key_scope",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+        if clean not in normalized:
+            normalized.append(clean)
+    if not normalized:
+        raise ApplicationError(
+            detail="At least one valid scope must be provided for the API key.",
+            code="empty_api_key_scopes",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+    return normalized
+
+
 @transaction.atomic
-def create_tenant_api_key(*, name: str) -> tuple[TenantAPIKey, str]:
+def create_tenant_api_key(
+    *,
+    name: str,
+    scopes: Iterable[str] | None = None,
+) -> tuple[TenantAPIKey, str]:
     tenant = require_tenant()
+    clean_name = (name or "").strip()
+    if not clean_name:
+        raise ApplicationError(
+            detail="API key name is required.",
+            code="api_key_name_required",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+    if TenantAPIKey.objects.filter(
+        name=clean_name,
+        is_active=True,
+        revoked_at__isnull=True,
+    ).exists():
+        raise ApplicationError(
+            detail="An active API key with this name already exists for this tenant.",
+            code="duplicate_api_key_name",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    validated_scopes = _validate_api_key_scopes(scopes)
     key_id = f"crm_{secrets.token_hex(16)}"
     raw_secret = secrets.token_urlsafe(32)
     api_key = TenantAPIKey.objects.create(
         tenant=tenant,
-        name=name.strip(),
+        name=clean_name,
         key_id=key_id,
         secret_encrypted=raw_secret,
+        scopes=validated_scopes,
         is_active=True,
     )
     return api_key, raw_secret
+
+
+@transaction.atomic
+def revoke_tenant_api_key(*, api_key: TenantAPIKey) -> TenantAPIKey:
+    locked = TenantAPIKey.objects.select_for_update().get(pk=api_key.pk)
+    now = timezone.now()
+    locked.is_active = False
+    locked.revoked_at = now
+    locked.save(update_fields=["is_active", "revoked_at", "updated_at"])
+    return locked
+
+
+@transaction.atomic
+def rotate_tenant_api_key(
+    *,
+    api_key: TenantAPIKey,
+    grace_period_seconds: int = 0,
+    name: str | None = None,
+    scopes: Iterable[str] | None = None,
+) -> tuple[TenantAPIKey, str, TenantAPIKey]:
+    from accounts.tasks import revoke_api_key_task
+
+    locked_old = TenantAPIKey.objects.select_for_update().get(pk=api_key.pk)
+    if not locked_old.is_currently_valid():
+        raise ApplicationError(
+            detail="Cannot rotate an API key that has already been revoked.",
+            code="api_key_already_revoked",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    now = timezone.now()
+    grace_sec = max(0, int(grace_period_seconds or 0))
+    if grace_sec > 0:
+        locked_old.revoked_at = now + timedelta(seconds=grace_sec)
+        locked_old.save(update_fields=["revoked_at", "updated_at"])
+        tid_str = str(locked_old.tenant_id)
+        kid_str = str(locked_old.id)
+        transaction.on_commit(
+            lambda: revoke_api_key_task.apply_async(
+                args=[tid_str, kid_str],
+                countdown=grace_sec,
+            )
+        )
+    else:
+        locked_old.is_active = False
+        locked_old.revoked_at = now
+        locked_old.save(update_fields=["is_active", "revoked_at", "updated_at"])
+
+    new_name = (name.strip() if name and name.strip() else locked_old.name)
+    new_scopes = (
+        _validate_api_key_scopes(scopes)
+        if scopes is not None
+        else list(locked_old.scopes or TenantAPIKey.Scope.values)
+    )
+    key_id = f"crm_{secrets.token_hex(16)}"
+    raw_secret = secrets.token_urlsafe(32)
+    new_key = TenantAPIKey.objects.create(
+        tenant=locked_old.tenant,
+        name=new_name,
+        key_id=key_id,
+        secret_encrypted=raw_secret,
+        scopes=new_scopes,
+        is_active=True,
+    )
+    return new_key, raw_secret, locked_old

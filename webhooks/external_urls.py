@@ -1,0 +1,42 @@
+from django.urls import path
+from webhooks.views import (
+    ExternalAppointmentCreateView,
+    ExternalAppointmentUpdateView,
+    ExternalContactDetailView,
+    ExternalContactTagsView,
+    ExternalContactUpsertView,
+    ExternalEventIngestView,
+)
+
+urlpatterns = [
+    path(
+        "contacts/upsert/",
+        ExternalContactUpsertView.as_view(),
+        name="external-contact-upsert",
+    ),
+    path(
+        "contacts/<str:external_id_or_id>/",
+        ExternalContactDetailView.as_view(),
+        name="external-contact-detail",
+    ),
+    path(
+        "contacts/<str:id>/tags/",
+        ExternalContactTagsView.as_view(),
+        name="external-contact-tags",
+    ),
+    path(
+        "appointments/",
+        ExternalAppointmentCreateView.as_view(),
+        name="external-appointment-create",
+    ),
+    path(
+        "appointments/<str:id>/",
+        ExternalAppointmentUpdateView.as_view(),
+        name="external-appointment-update",
+    ),
+    path(
+        "events/",
+        ExternalEventIngestView.as_view(),
+        name="external-event-ingest",
+    ),
+]

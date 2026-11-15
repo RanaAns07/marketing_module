@@ -411,9 +411,12 @@ class ContactService:
         tenant_id = require_tenant_id()
         norm_email = normalize_email(email)
         norm_phone = normalize_phone_e164(phone)
+        clean_ext_id = (external_id or "").strip()
 
         existing: Contact | None = None
-        if norm_email:
+        if clean_ext_id:
+            existing = Contact.objects.select_for_update().filter(external_id=clean_ext_id).first()
+        if existing is None and norm_email:
             existing = Contact.objects.select_for_update().filter(email=norm_email).first()
         if existing is None and norm_phone:
             existing = Contact.objects.select_for_update().filter(phone=norm_phone).first()

@@ -1,13 +1,32 @@
+from datetime import timezone as dt_timezone
 import hashlib
 import hmac
 import uuid
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from accounts.models import Membership, TenantAPIKey
 from core.context import set_current_tenant
+
+HMAC_TIMESTAMP_TOLERANCE_SECONDS = 300
+
+
+def _parse_hmac_timestamp(raw_timestamp: str) -> float:
+    cleaned = (raw_timestamp or "").strip()
+    if not cleaned:
+        raise AuthenticationFailed("X-Timestamp header is required for API key authentication.")
+    try:
+        return float(cleaned)
+    except (ValueError, TypeError):
+        dt = parse_datetime(cleaned)
+        if dt is None:
+            raise AuthenticationFailed("Invalid X-Timestamp header format.")
+        if timezone.is_naive(dt):
+            dt = timezone.make_aware(dt, dt_timezone.utc)
+        return dt.timestamp()
 
 
 def resolve_request_tenant_membership(request, user):
@@ -54,9 +73,16 @@ class APIKeyHMACAuthentication(BaseAuthentication):
     def authenticate(self, request):
         key_id = request.headers.get("X-API-Key") or request.META.get("HTTP_X_API_KEY")
         signature = request.headers.get("X-Signature") or request.META.get("HTTP_X_SIGNATURE")
-        if not key_id or not signature:
+        if not key_id and not signature:
             return None
+        if not key_id or not signature:
+            raise AuthenticationFailed("Both X-API-Key and X-Signature headers are required.")
 
+        raw_tenant_id = request.headers.get("X-Tenant") or request.META.get("HTTP_X_TENANT")
+        if raw_tenant_id:
+            raise PermissionDenied("X-Tenant header is not permitted with API key authentication.")
+
+        now = timezone.now()
         api_key_obj = (
             TenantAPIKey.unscoped_objects.select_related("tenant")
             .filter(key_id=key_id, is_active=True, tenant__is_active=True)
@@ -65,25 +91,37 @@ class APIKeyHMACAuthentication(BaseAuthentication):
         if api_key_obj is None:
             raise AuthenticationFailed("Invalid or inactive API key.")
 
-        raw_tenant_id = request.headers.get("X-Tenant") or request.META.get("HTTP_X_TENANT")
-        if raw_tenant_id and str(api_key_obj.tenant_id) != str(raw_tenant_id):
-            raise PermissionDenied("API key does not match X-Tenant header.")
+        if not api_key_obj.is_currently_valid(now=now):
+            TenantAPIKey.unscoped_objects.filter(pk=api_key_obj.pk).update(is_active=False)
+            raise AuthenticationFailed("API key has been revoked.")
 
-        timestamp = request.headers.get("X-Timestamp") or request.META.get("HTTP_X_TIMESTAMP") or ""
+        timestamp = (
+            request.headers.get("X-Timestamp")
+            or request.META.get("HTTP_X_TIMESTAMP")
+            or ""
+        ).strip()
+        ts_epoch = _parse_hmac_timestamp(timestamp)
+        if abs(now.timestamp() - ts_epoch) > HMAC_TIMESTAMP_TOLERANCE_SECONDS:
+            raise AuthenticationFailed("Request timestamp is outside the 5-minute tolerance window.")
+
         body_bytes = request.body or b""
-        if timestamp:
-            signing_payload = f"{timestamp}.".encode("utf-8") + body_bytes
-        else:
-            signing_payload = body_bytes
-
-        expected_sig = hmac.new(
-            api_key_obj.secret_encrypted.encode("utf-8"),
-            signing_payload,
+        secret_bytes = api_key_obj.secret_encrypted.encode("utf-8")
+        expected_sig_dot = hmac.new(
+            secret_bytes,
+            f"{timestamp}.".encode("utf-8") + body_bytes,
+            hashlib.sha256,
+        ).hexdigest()
+        expected_sig_concat = hmac.new(
+            secret_bytes,
+            timestamp.encode("utf-8") + body_bytes,
             hashlib.sha256,
         ).hexdigest()
 
-        provided_sig = signature.removeprefix("sha256=")
-        if not hmac.compare_digest(expected_sig, provided_sig):
+        provided_sig = signature.removeprefix("sha256=").strip().lower()
+        if not (
+            hmac.compare_digest(expected_sig_dot, provided_sig)
+            or hmac.compare_digest(expected_sig_concat, provided_sig)
+        ):
             raise AuthenticationFailed("Invalid HMAC signature.")
 
         owner_membership = (
@@ -99,7 +137,7 @@ class APIKeyHMACAuthentication(BaseAuthentication):
         if owner_membership is None:
             raise AuthenticationFailed("Tenant has no active owner or administrator.")
 
-        TenantAPIKey.unscoped_objects.filter(pk=api_key_obj.pk).update(last_used_at=timezone.now())
+        TenantAPIKey.unscoped_objects.filter(pk=api_key_obj.pk).update(last_used_at=now)
         request.tenant = api_key_obj.tenant
         request.membership = owner_membership
         request.api_key = api_key_obj

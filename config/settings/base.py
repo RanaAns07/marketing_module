@@ -108,7 +108,7 @@ CACHES = {
     "default": {
         "BACKEND": env(
             "CACHE_BACKEND",
-            default="django.core.cache.backends.locmem.LocMemCache",
+            default="django.core.cache.backends.redis.RedisCache",
         ),
         "LOCATION": REDIS_URL,
     }
@@ -152,6 +152,14 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_SCHEMA_CLASS": "core.schema.TenantAwareAutoSchema",
     "EXCEPTION_HANDLER": "core.exceptions.custom_exception_handler",
+    "DEFAULT_THROTTLE_CLASSES": [
+        "accounts.throttling.APIKeyRateThrottle",
+        "accounts.throttling.TenantRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "api_key": env("THROTTLE_RATE_API_KEY", default="600/minute"),
+        "tenant": env("THROTTLE_RATE_TENANT", default="1200/minute"),
+    },
 }
 
 SIMPLE_JWT = {
@@ -190,12 +198,14 @@ SPECTACULAR_SETTINGS = {
         "MessageStatusEnum": "messaging.models.Message.Status",
         "ChannelEnum": "messaging.models.Channel",
         "MetaConnectionStatusEnum": "leads.models.MetaConnection.Status",
-        "MetaLeadEventStatusEnum": "leads.models.MetaLeadEvent.Status",
+        "InboundEventStatusEnum": "leads.models.MetaLeadEvent.Status",
         "WorkflowStatusEnum": "automation.models.Workflow.Status",
         "WorkflowEnrollmentStatusEnum": "automation.models.WorkflowEnrollment.Status",
         "StepExecutionStatusEnum": "automation.models.StepExecution.Status",
         "ConversationStatusEnum": "inbox.models.Conversation.Status",
         "AssignmentStrategyEnum": "core.models.Tenant.AssignmentStrategy",
+        "WebhookDeliveryStatusEnum": "webhooks.models.WebhookDelivery.Status",
+        "APIKeyScopeEnum": "accounts.models.TenantAPIKey.Scope",
     },
 }
 
@@ -239,6 +249,7 @@ CELERY_TASK_ROUTES = {
     "notifications.tasks.*": {"queue": "default"},
     "contacts.tasks.*": {"queue": "default"},
     "inbox.tasks.*": {"queue": "default"},
+    "accounts.tasks.*": {"queue": "default"},
 }
 
 CELERY_BEAT_SCHEDULE = {
@@ -261,6 +272,10 @@ CELERY_BEAT_SCHEDULE = {
     "dispatch-due-workflow-enrollments": {
         "task": "automation.tasks.dispatch_due_enrollments_beat_task",
         "schedule": timedelta(seconds=15),
+    },
+    "retry-due-webhook-deliveries": {
+        "task": "webhooks.tasks.retry_due_webhook_deliveries_beat_task",
+        "schedule": timedelta(minutes=1),
     },
 }
 

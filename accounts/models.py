@@ -1,6 +1,8 @@
 import uuid
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
+from django.db.models import Q
+from django.utils import timezone
 from core.fields import EncryptedTextField
 from core.models import TenantOwnedModel
 
@@ -104,17 +106,27 @@ class Membership(TenantOwnedModel):
 
 
 class TenantAPIKey(TenantOwnedModel):
+    class Scope(models.TextChoices):
+        EVENTS_WRITE = "events:write", "Events Write"
+        CONTACTS_READ = "contacts:read", "Contacts Read"
+        CONTACTS_WRITE = "contacts:write", "Contacts Write"
+        APPOINTMENTS_WRITE = "appointments:write", "Appointments Write"
+        WEBHOOKS_MANAGE = "webhooks:manage", "Webhooks Manage"
+
     name = models.CharField(max_length=120)
     key_id = models.CharField(max_length=64, unique=True, db_index=True)
     secret_encrypted = EncryptedTextField()
+    scopes = models.JSONField(default=list, blank=True)
     is_active = models.BooleanField(default=True)
     last_used_at = models.DateTimeField(null=True, blank=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["-created_at"]
         constraints = [
             models.UniqueConstraint(
                 fields=["tenant", "name"],
+                condition=Q(is_active=True, revoked_at__isnull=True),
                 name="uniq_apikey_tenant_name",
             ),
         ]
@@ -128,3 +140,19 @@ class TenantAPIKey(TenantOwnedModel):
                 name="idx_apikey_tenant_keyid",
             ),
         ]
+
+    def is_currently_valid(self, now=None) -> bool:
+        if not self.is_active:
+            return False
+        if self.revoked_at is not None:
+            ref_now = now or timezone.now()
+            if self.revoked_at <= ref_now:
+                return False
+        return True
+
+    def has_scope(self, scope: str) -> bool:
+        current_scopes = self.scopes or []
+        return "*" in current_scopes or scope in current_scopes
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.key_id})"

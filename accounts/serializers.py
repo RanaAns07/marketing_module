@@ -157,8 +157,30 @@ class TenantAPIKeySerializer(serializers.ModelSerializer):
             "id",
             "name",
             "key_id",
+            "scopes",
             "is_active",
             "last_used_at",
+            "revoked_at",
             "created_at",
         ]
-        read_only_fields = ["id", "key_id", "last_used_at", "created_at"]
+        read_only_fields = ["id", "key_id", "last_used_at", "revoked_at", "created_at"]
+
+
+class CreateTenantAPIKeySerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=120)
+    scopes = serializers.ListField(
+        child=serializers.ChoiceField(choices=TenantAPIKey.Scope.choices),
+        required=False,
+        allow_empty=False,
+    )
+
+
+class RotateTenantAPIKeySerializer(serializers.Serializer):
+    grace_period_seconds = serializers.IntegerField(min_value=0, max_value=604800, required=False, default=0)
+    grace_period_minutes = serializers.IntegerField(min_value=0, max_value=10080, required=False, default=0)
+    name = serializers.CharField(max_length=120, required=False, allow_blank=True)
+    scopes = serializers.ListField(
+        child=serializers.ChoiceField(choices=TenantAPIKey.Scope.choices),
+        required=False,
+        allow_empty=False,
+    )

@@ -16,11 +16,13 @@ from accounts.selectors import (
 from accounts.serializers import (
     AddTeamMemberSerializer,
     AvailabilityToggleSerializer,
+    CreateTenantAPIKeySerializer,
     LoginSerializer,
     MembershipSummarySerializer,
     PasswordChangeSerializer,
     RegisterTenantOwnerSerializer,
     RoleChangeSerializer,
+    RotateTenantAPIKeySerializer,
     TeamMemberSerializer,
     TenantAPIKeySerializer,
     TenantSummarySerializer,
@@ -36,6 +38,8 @@ from accounts.services import (
     deactivate_team_member,
     login_user,
     register_tenant_and_owner,
+    revoke_tenant_api_key,
+    rotate_tenant_api_key,
     set_member_availability,
     update_team_member,
     update_tenant_settings,
@@ -273,9 +277,46 @@ class TenantAPIKeyViewSet(viewsets.ModelViewSet):
         return get_tenant_api_keys_queryset()
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        serializer = CreateTenantAPIKeySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        api_key, raw_secret = create_tenant_api_key(name=serializer.validated_data["name"])
+        api_key, raw_secret = create_tenant_api_key(
+            name=serializer.validated_data["name"],
+            scopes=serializer.validated_data.get("scopes"),
+        )
         data = TenantAPIKeySerializer(api_key).data
         data["secret"] = raw_secret
+        return Response(data, status=status.HTTP_201_CREATED)
+
+    def destroy(self, request, *args, **kwargs):
+        target = self.get_object()
+        revoked = revoke_tenant_api_key(api_key=target)
+        return Response(TenantAPIKeySerializer(revoked).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"], url_path="revoke")
+    def revoke(self, request, pk=None):
+        target = self.get_object()
+        revoked = revoke_tenant_api_key(api_key=target)
+        return Response(TenantAPIKeySerializer(revoked).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"], url_path="rotate")
+    def rotate(self, request, pk=None):
+        target = self.get_object()
+        serializer = RotateTenantAPIKeySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        vdata = serializer.validated_data
+        grace_seconds = int(vdata.get("grace_period_seconds") or 0)
+        grace_minutes = int(vdata.get("grace_period_minutes") or 0)
+        if grace_minutes > 0 and grace_seconds == 0:
+            grace_seconds = grace_minutes * 60
+
+        new_key, raw_secret, old_key = rotate_tenant_api_key(
+            api_key=target,
+            grace_period_seconds=grace_seconds,
+            name=vdata.get("name"),
+            scopes=vdata.get("scopes"),
+        )
+        data = TenantAPIKeySerializer(new_key).data
+        data["secret"] = raw_secret
+        data["replaced_key_id"] = str(old_key.id)
+        data["old_key_revoked_at"] = old_key.revoked_at.isoformat() if old_key.revoked_at else None
         return Response(data, status=status.HTTP_201_CREATED)

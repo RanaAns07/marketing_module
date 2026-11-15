@@ -1,12 +1,21 @@
-from django.urls import path
+from django.urls import include, path
+from rest_framework.routers import DefaultRouter
 from integrations.models import InboundWebhookEvent
 from messaging.views import EmailUnsubscribeConfirmView
 from webhooks.views import (
+    ExternalEventViewSet,
     MetaWebhookView,
     SendGridWebhookView,
     TwilioSMSWebhookView,
     TwilioWhatsAppWebhookView,
+    WebhookDeliveryViewSet,
+    WebhookEndpointViewSet,
 )
+
+router = DefaultRouter()
+router.register("endpoints", WebhookEndpointViewSet, basename="webhook-endpoint")
+router.register("deliveries", WebhookDeliveryViewSet, basename="webhook-delivery")
+router.register("external-events", ExternalEventViewSet, basename="external-event")
 
 urlpatterns = [
     path(
@@ -69,4 +78,5 @@ urlpatterns = [
         EmailUnsubscribeConfirmView.as_view(),
         name="webhook-email-unsubscribe-token",
     ),
+    path("", include(router.urls)),
 ]

@@ -21,7 +21,7 @@ class MembershipAdmin(admin.ModelAdmin):
 
 @admin.register(TenantAPIKey)
 class TenantAPIKeyAdmin(admin.ModelAdmin):
-    list_display = ("name", "key_id", "tenant", "is_active", "last_used_at", "created_at")
+    list_display = ("name", "key_id", "tenant", "scopes", "is_active", "last_used_at", "revoked_at", "created_at")
     list_filter = ("is_active",)
     search_fields = ("name", "key_id", "tenant__name")
 
