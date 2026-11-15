@@ -13,7 +13,8 @@ REDIS_URL = _base.REDIS_URL
 SECRET_KEY = _base.SECRET_KEY
 
 DEBUG = False
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1", "ads.fitverx.com", "35.153.171.83"])
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=["https://ads.fitverx.com", "http://ads.fitverx.com"])
 
 if not SECRET_KEY or SECRET_KEY == "insecure-dev-secret-key-for-local-setup-only-32chars":
     raise ImproperlyConfigured("SECRET_KEY must be configured in production.")
