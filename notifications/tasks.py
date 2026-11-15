@@ -63,23 +63,6 @@ def handle_domain_event(self, tenant_id: str, event: dict[str, Any]) -> dict[str
                 link=f"/contacts/{contact_id}" if contact_id else "/contacts",
             )
 
-    elif event_name in (EventName.EMAIL_RECEIVED, EventName.SMS_RECEIVED, EventName.WHATSAPP_RECEIVED):
-        assigned_user_id = payload.get("assigned_user_id")
-        if assigned_user_id:
-            recipients = [assigned_user_id]
-        else:
-            recipients = list(
-                Membership.objects.filter(is_active=True).values_list("user_id", flat=True)
-            )
-        conversation_id = payload.get("conversation_id")
-        notify(
-            tenant=tenant_id,
-            users=recipients,
-            type=NotificationType.INCOMING_MESSAGE,
-            payload=payload,
-            link=f"/inbox/{conversation_id}" if conversation_id else "/inbox",
-        )
-
     elif event_name == EventName.ASSIGNMENT_CHANGED:
         if payload.get("notified"):
             return {"subscriber": "notifications", "event_id": event.get("event_id")}

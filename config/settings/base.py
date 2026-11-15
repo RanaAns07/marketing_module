@@ -194,6 +194,8 @@ SPECTACULAR_SETTINGS = {
         "WorkflowStatusEnum": "automation.models.Workflow.Status",
         "WorkflowEnrollmentStatusEnum": "automation.models.WorkflowEnrollment.Status",
         "StepExecutionStatusEnum": "automation.models.StepExecution.Status",
+        "ConversationStatusEnum": "inbox.models.Conversation.Status",
+        "AssignmentStrategyEnum": "core.models.Tenant.AssignmentStrategy",
     },
 }
 
@@ -236,6 +238,7 @@ CELERY_TASK_ROUTES = {
     "core.tasks.*": {"queue": "default"},
     "notifications.tasks.*": {"queue": "default"},
     "contacts.tasks.*": {"queue": "default"},
+    "inbox.tasks.*": {"queue": "default"},
 }
 
 CELERY_BEAT_SCHEDULE = {

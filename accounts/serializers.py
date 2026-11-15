@@ -14,6 +14,8 @@ class TenantSummarySerializer(serializers.ModelSerializer):
             "marketer_can_view_all_contacts",
             "notify_admins_on_new_lead",
             "assignment_mode",
+            "assignment_strategy",
+            "handoff_add_interested_tag",
             "settings",
             "created_at",
             "updated_at",

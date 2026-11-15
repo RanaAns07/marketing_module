@@ -1,3 +1,4 @@
+from importlib import import_module
 from typing import Any
 from celery import current_app, shared_task
 from core.context import TenantAwareTask
@@ -9,11 +10,18 @@ def fanout_domain_event(self, tenant_id: str, event: dict[str, Any]) -> dict[str
     dispatched = []
     for subscriber_name, task_name, queue_name in SUBSCRIBER_TASKS:
         try:
-            current_app.send_task(
-                task_name,
-                args=[tenant_id, event],
-                queue=queue_name,
-            )
+            if task_name not in current_app.tasks:
+                module_path = task_name.rsplit(".", 1)[0]
+                import_module(module_path)
+            task = current_app.tasks.get(task_name)
+            if task is not None:
+                task.apply_async(args=[tenant_id, event], queue=queue_name)
+            else:
+                current_app.send_task(
+                    task_name,
+                    args=[tenant_id, event],
+                    queue=queue_name,
+                )
             dispatched.append(subscriber_name)
         except Exception:
             pass

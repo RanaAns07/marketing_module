@@ -9,7 +9,7 @@ from django.db.models import Q
 from django.utils import timezone
 from rest_framework import status
 from accounts.models import User
-from accounts.services import resolve_tenant_lead_assignee
+from accounts.services import AssignmentService, resolve_tenant_lead_assignee
 from contacts.models import Contact, CustomFieldDefinition, Tag
 from contacts.services import ContactService, normalize_phone_e164
 from core.context import require_tenant, require_tenant_id, tenant_context
@@ -727,11 +727,13 @@ def ingest_fetched_meta_lead(
 
     default_tags = list(form.default_tags.all()) if form is not None else []
     tag_names = [t.name for t in default_tags]
+    tag_ids = [t.id for t in default_tags]
 
-    assignee = resolve_tenant_lead_assignee(
+    assignee = AssignmentService.resolve_for_lead(
         source_page=source_page,
         source_form=source_form,
         tag_names=tag_names,
+        tag_ids=tag_ids,
     )
 
     contact, _ = ContactService.upsert_from_source(

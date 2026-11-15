@@ -11,6 +11,11 @@ class Tenant(models.Model):
         ROUND_ROBIN = "round_robin", "Round-Robin"
         BY_SOURCE = "by_source", "Dedicated Owner by Source or Form"
 
+    class AssignmentStrategy(models.TextChoices):
+        SHARED_QUEUE = "shared_queue", "Manual Assignment / Shared Queue"
+        DEDICATED_OWNER = "dedicated_owner", "Dedicated Owner by Source or Form"
+        ROUND_ROBIN = "round_robin", "Even Team Distribution (Round-Robin)"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, unique=True)
@@ -23,6 +28,12 @@ class Tenant(models.Model):
         choices=AssignmentMode.choices,
         default=AssignmentMode.MANUAL,
     )
+    assignment_strategy = models.CharField(
+        max_length=32,
+        choices=AssignmentStrategy.choices,
+        default=AssignmentStrategy.SHARED_QUEUE,
+    )
+    handoff_add_interested_tag = models.BooleanField(default=True)
     settings = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

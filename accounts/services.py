@@ -1,17 +1,22 @@
+from collections.abc import Iterable
 import secrets
 from typing import Any
+import uuid
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, Q
 from django.utils import timezone
 from django.utils.text import slugify
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from accounts.models import Membership, TenantAPIKey, User
-from core.context import require_tenant, tenant_context
+from core.context import require_tenant, require_tenant_id, tenant_context
+from core.events import EventName, publish
 from core.exceptions import ApplicationError
 from core.models import Tenant
+from notifications.models import NotificationType
+from notifications.services import notify
 
 
 def _generate_unique_tenant_slug(name: str) -> str:
@@ -414,12 +419,31 @@ def update_team_member(
     return Membership.objects.select_related("user", "tenant").get(pk=target_membership.pk)
 
 
+def _resolve_effective_assignment_strategy(tenant: Tenant) -> str:
+    strategy = (tenant.assignment_strategy or "").strip().lower()
+    mode = (tenant.assignment_mode or "").strip().lower()
+
+    if strategy in (
+        Tenant.AssignmentStrategy.DEDICATED_OWNER,
+        Tenant.AssignmentStrategy.ROUND_ROBIN,
+    ):
+        return strategy
+
+    if mode == Tenant.AssignmentMode.ROUND_ROBIN:
+        return Tenant.AssignmentStrategy.ROUND_ROBIN
+    if mode == Tenant.AssignmentMode.BY_SOURCE:
+        return Tenant.AssignmentStrategy.DEDICATED_OWNER
+
+    return Tenant.AssignmentStrategy.SHARED_QUEUE
+
+
 @transaction.atomic
-def select_next_round_robin_member(marketers_only: bool = True) -> Membership | None:
+def select_next_round_robin_member(marketers_only: bool = False) -> Membership | None:
     qs = Membership.objects.select_for_update().select_related("user", "tenant").filter(
         is_active=True,
         is_available=True,
         user__is_active=True,
+        role__in=[Membership.Role.MARKETER, Membership.Role.ADMIN],
     )
     if marketers_only:
         marketer_qs = qs.filter(role=Membership.Role.MARKETER)
@@ -433,40 +457,439 @@ def select_next_round_robin_member(marketers_only: bool = True) -> Membership | 
     return candidate
 
 
+def _match_dedicated_owner_rule(
+    *,
+    contact: Any = None,
+    source_page: str = "",
+    source_form: str = "",
+    tag_names: Iterable[str] | None = None,
+    tag_ids: Iterable[Any] | None = None,
+) -> Membership | None:
+    tenant = require_tenant()
+    raw_pages = [source_page, getattr(contact, "source_page", "") or ""]
+    raw_forms = [source_form, getattr(contact, "source_form", "") or ""]
+
+    candidate_pages = {s.strip().lower() for s in raw_pages if s and s.strip()}
+    candidate_forms = {s.strip().lower() for s in raw_forms if s and s.strip()}
+
+    if candidate_pages:
+        try:
+            from leads.models import MetaPage
+            for mp in MetaPage.objects.all():
+                mp_vals = {
+                    (mp.name or "").strip().lower(),
+                    (mp.page_id or "").strip().lower(),
+                    str(mp.id).lower(),
+                }
+                if candidate_pages & mp_vals:
+                    candidate_pages.update(v for v in mp_vals if v)
+        except Exception:
+            pass
+
+    if candidate_forms:
+        try:
+            from leads.models import MetaLeadForm
+            for mf in MetaLeadForm.objects.all():
+                mf_vals = {
+                    (mf.name or "").strip().lower(),
+                    (mf.form_id or "").strip().lower(),
+                    str(mf.id).lower(),
+                }
+                if candidate_forms & mf_vals:
+                    candidate_forms.update(v for v in mf_vals if v)
+        except Exception:
+            pass
+
+    candidate_tag_names = {str(t).strip().lower() for t in (tag_names or []) if str(t).strip()}
+    candidate_tag_ids = {str(tid).strip().lower() for tid in (tag_ids or []) if str(tid).strip()}
+    if contact is not None and getattr(contact, "pk", None) is not None:
+        for t in contact.tags.all():
+            if t.name:
+                candidate_tag_names.add(t.name.strip().lower())
+            candidate_tag_ids.add(str(t.id).lower())
+
+    from inbox.models import AssignmentRule
+
+    rules = list(
+        AssignmentRule.objects.select_related("assignee", "assignee__user", "match_tag")
+        .filter(
+            is_active=True,
+            assignee__is_active=True,
+            assignee__user__is_active=True,
+        )
+        .order_by("priority", "created_at")
+    )
+
+    for rule in rules:
+        r_page = (rule.match_page or "").strip().lower()
+        r_form = (rule.match_form or "").strip().lower()
+        r_tag_id = str(rule.match_tag_id).lower() if rule.match_tag_id else ""
+        r_tag_name = (
+            rule.match_tag.name
+            if rule.match_tag is not None
+            else (rule.match_tag_name or "")
+        ).strip().lower()
+
+        if not (r_page or r_form or r_tag_id or r_tag_name):
+            continue
+
+        if r_page and r_page not in candidate_pages:
+            continue
+        if r_form and r_form not in candidate_forms:
+            continue
+        if r_tag_id or r_tag_name:
+            tag_matched = (
+                (bool(r_tag_id) and r_tag_id in candidate_tag_ids)
+                or (bool(r_tag_name) and r_tag_name in candidate_tag_names)
+                or (bool(r_tag_name) and r_tag_name in candidate_tag_ids)
+            )
+            if not tag_matched:
+                continue
+
+        return rule.assignee
+
+    legacy_rules = (tenant.settings or {}).get("assignment_rules") or {}
+    if isinstance(legacy_rules, dict):
+        target_id = (
+            (legacy_rules.get("forms") or {}).get(source_form)
+            or (legacy_rules.get("pages") or {}).get(source_page)
+        )
+        if not target_id and candidate_tag_names:
+            tag_map = legacy_rules.get("tags") or {}
+            for k, v in tag_map.items():
+                if str(k).strip().lower() in candidate_tag_names:
+                    target_id = v
+                    break
+        if target_id:
+            member = (
+                Membership.objects.select_related("user", "tenant")
+                .filter(pk=target_id, is_active=True, user__is_active=True)
+                .first()
+            )
+            if member is not None:
+                return member
+
+    return None
+
+
 @transaction.atomic
 def resolve_tenant_lead_assignee(
     *,
+    contact: Any = None,
     source_page: str = "",
     source_form: str = "",
-    tag_names: list[str] | None = None,
+    tag_names: Iterable[str] | None = None,
+    tag_ids: Iterable[Any] | None = None,
 ) -> Membership | None:
     tenant = require_tenant()
-    if tenant.assignment_mode == Tenant.AssignmentMode.ROUND_ROBIN:
-        return select_next_round_robin_member(marketers_only=True)
+    strategy = _resolve_effective_assignment_strategy(tenant)
 
-    if tenant.assignment_mode == Tenant.AssignmentMode.BY_SOURCE:
-        rules = (tenant.settings or {}).get("assignment_rules") or {}
-        if isinstance(rules, dict):
-            target_id = (
-                (rules.get("forms") or {}).get(source_form)
-                or (rules.get("pages") or {}).get(source_page)
-            )
-            if not target_id and tag_names:
-                tag_rules = rules.get("tags") or {}
-                for tname in tag_names:
-                    if tname in tag_rules:
-                        target_id = tag_rules[tname]
-                        break
-            if target_id:
-                member = (
-                    Membership.objects.select_related("user", "tenant")
-                    .filter(pk=target_id, is_active=True)
-                    .first()
-                )
-                if member is not None:
-                    return member
+    if strategy == Tenant.AssignmentStrategy.SHARED_QUEUE:
+        return None
+
+    if strategy == Tenant.AssignmentStrategy.DEDICATED_OWNER:
+        return _match_dedicated_owner_rule(
+            contact=contact,
+            source_page=source_page,
+            source_form=source_form,
+            tag_names=tag_names,
+            tag_ids=tag_ids,
+        )
+
+    if strategy == Tenant.AssignmentStrategy.ROUND_ROBIN:
+        return select_next_round_robin_member(marketers_only=False)
 
     return None
+
+
+class AssignmentService:
+    @staticmethod
+    @transaction.atomic
+    def resolve_for_lead(
+        *,
+        contact: Any = None,
+        source_page: str = "",
+        source_form: str = "",
+        tag_names: Iterable[str] | None = None,
+        tag_ids: Iterable[Any] | None = None,
+    ) -> Membership | None:
+        return resolve_tenant_lead_assignee(
+            contact=contact,
+            source_page=source_page,
+            source_form=source_form,
+            tag_names=tag_names,
+            tag_ids=tag_ids,
+        )
+
+    @staticmethod
+    def match_dedicated_owner_rule(
+        *,
+        contact: Any = None,
+        source_page: str = "",
+        source_form: str = "",
+        tag_names: Iterable[str] | None = None,
+        tag_ids: Iterable[Any] | None = None,
+    ) -> Membership | None:
+        return _match_dedicated_owner_rule(
+            contact=contact,
+            source_page=source_page,
+            source_form=source_form,
+            tag_names=tag_names,
+            tag_ids=tag_ids,
+        )
+
+    @staticmethod
+    @transaction.atomic
+    def assign_contact_and_conversation(
+        *,
+        contact: Any,
+        assignee: Membership | None,
+        conversation: Any = None,
+        actor: User | None = None,
+        notify_assignee: bool = True,
+        log_activity: bool = True,
+        publish_event: bool = True,
+    ) -> tuple[Any, Any, bool]:
+        from contacts.models import Activity, Contact
+        from contacts.services import log_contact_activity
+        from inbox.models import Conversation
+
+        tenant_id = require_tenant_id()
+        locked_contact = (
+            Contact.objects.select_for_update(of=("self",))
+            .select_related("assigned_to", "assigned_to__user", "lead_status", "tenant")
+            .get(pk=contact.pk)
+        )
+        locked_conv = (
+            Conversation.objects.select_for_update(of=("self",))
+            .select_related("assigned_to", "assigned_to__user")
+            .filter(contact=locked_contact)
+            .first()
+        )
+
+        previous_assignee = (
+            locked_conv.assigned_to
+            if (locked_conv is not None and locked_conv.assigned_to_id is not None)
+            else locked_contact.assigned_to
+        )
+
+        target_id = assignee.pk if assignee is not None else None
+        prev_id = previous_assignee.pk if previous_assignee is not None else None
+        changed = prev_id != target_id
+
+        now = timezone.now()
+        if locked_contact.assigned_to_id != target_id:
+            locked_contact.assigned_to = assignee
+            locked_contact.last_activity_at = now
+            locked_contact.inactive_notified_at = None
+            locked_contact.save(
+                update_fields=["assigned_to", "last_activity_at", "inactive_notified_at", "updated_at"]
+            )
+
+        if locked_conv is not None and locked_conv.assigned_to_id != target_id:
+            locked_conv.assigned_to = assignee
+            locked_conv.save(update_fields=["assigned_to", "updated_at"])
+
+        if not changed:
+            return locked_contact, locked_conv, False
+
+        if assignee is None:
+            desc = "Unassigned."
+        elif previous_assignee is not None:
+            desc = f"Reassigned from {previous_assignee.user.full_name} to {assignee.user.full_name}."
+        else:
+            desc = f"Assigned to {assignee.user.full_name}."
+
+        conv_id_str = str(locked_conv.id) if locked_conv is not None else None
+        payload = {
+            "assigned_membership_id": str(assignee.id) if assignee is not None else None,
+            "assigned_user_id": str(assignee.user_id) if assignee is not None else None,
+            "previous_assigned_membership_id": (
+                str(previous_assignee.id) if previous_assignee is not None else None
+            ),
+            "previous_assigned_user_id": (
+                str(previous_assignee.user_id) if previous_assignee is not None else None
+            ),
+            "conversation_id": conv_id_str,
+            "notified": True,
+        }
+
+        if log_activity:
+            log_contact_activity(
+                contact=locked_contact,
+                actor=actor,
+                activity_type=Activity.ActivityType.ASSIGNMENT,
+                description=desc,
+                metadata=payload,
+                touch_activity=False,
+            )
+
+        if (
+            notify_assignee
+            and assignee is not None
+            and (actor is None or assignee.user_id != actor.id)
+        ):
+            notif_type = (
+                NotificationType.CONVERSATION_REASSIGNED
+                if previous_assignee is not None
+                else NotificationType.CONVERSATION_ASSIGNED
+            )
+            contact_label = (
+                locked_contact.full_name
+                or locked_contact.email
+                or locked_contact.phone
+                or "Contact"
+            )
+            title = (
+                f"Conversation Transferred to You: {contact_label}"
+                if previous_assignee is not None
+                else f"Conversation Assigned to You: {contact_label}"
+            )
+            link = (
+                f"/inbox/{conv_id_str}"
+                if conv_id_str
+                else f"/contacts/{locked_contact.id}"
+            )
+            notify(
+                tenant=tenant_id,
+                users=[assignee.user],
+                type=notif_type,
+                payload={
+                    **payload,
+                    "title": title,
+                    "body": desc,
+                    "contact_id": str(locked_contact.id),
+                },
+                link=link,
+            )
+
+        if publish_event:
+            publish(
+                EventName.ASSIGNMENT_CHANGED,
+                tenant_id=tenant_id,
+                contact_id=locked_contact.id,
+                payload=payload,
+            )
+
+        return locked_contact, locked_conv, True
+
+    @staticmethod
+    @transaction.atomic
+    def auto_assign_on_inbound(
+        *,
+        contact: Any,
+        conversation: Any = None,
+        notify_assignee: bool = False,
+    ) -> tuple[Membership | None, bool]:
+        from contacts.models import Contact
+        from inbox.models import Conversation
+
+        locked_contact = (
+            Contact.objects.select_for_update(of=("self",))
+            .select_related("assigned_to", "assigned_to__user", "tenant")
+            .prefetch_related("tags")
+            .get(pk=contact.pk)
+        )
+        locked_conv = (
+            Conversation.objects.select_for_update(of=("self",))
+            .select_related("assigned_to", "assigned_to__user")
+            .filter(contact=locked_contact)
+            .first()
+        )
+
+        if locked_conv is not None and locked_conv.assigned_to_id is not None:
+            if locked_contact.assigned_to_id is None:
+                locked_contact.assigned_to = locked_conv.assigned_to
+                locked_contact.save(update_fields=["assigned_to", "updated_at"])
+            return locked_conv.assigned_to, False
+
+        if locked_contact.assigned_to_id is not None:
+            if locked_conv is not None and locked_conv.assigned_to_id is None:
+                locked_conv.assigned_to = locked_contact.assigned_to
+                locked_conv.save(update_fields=["assigned_to", "updated_at"])
+            return locked_contact.assigned_to, False
+
+        tag_names = [t.name for t in locked_contact.tags.all()]
+        tag_ids = [t.id for t in locked_contact.tags.all()]
+        assignee = resolve_tenant_lead_assignee(
+            contact=locked_contact,
+            source_page=locked_contact.source_page,
+            source_form=locked_contact.source_form,
+            tag_names=tag_names,
+            tag_ids=tag_ids,
+        )
+        if assignee is None:
+            return None, False
+
+        _, _, changed = AssignmentService.assign_contact_and_conversation(
+            contact=locked_contact,
+            conversation=locked_conv,
+            assignee=assignee,
+            actor=None,
+            notify_assignee=notify_assignee,
+            log_activity=True,
+            publish_event=True,
+        )
+        return assignee, changed
+
+    @staticmethod
+    @transaction.atomic
+    def assign_from_workflow(
+        *,
+        contact: Any,
+        mode: str = "round_robin",
+        member_ref: Any = None,
+        marketers_only: bool = False,
+    ) -> Membership | None:
+        from contacts.models import Contact
+
+        locked_contact = (
+            Contact.objects.select_for_update(of=("self",))
+            .select_related("assigned_to", "assigned_to__user", "tenant")
+            .prefetch_related("tags")
+            .get(pk=contact.pk)
+        )
+        norm_mode = (mode or "round_robin").strip().lower()
+        assignee: Membership | None = None
+
+        if norm_mode == "specific":
+            if member_ref:
+                try:
+                    parsed_uuid = uuid.UUID(str(member_ref).strip())
+                    assignee = (
+                        Membership.objects.select_related("user", "tenant")
+                        .filter(Q(pk=parsed_uuid) | Q(user_id=parsed_uuid), is_active=True, user__is_active=True)
+                        .first()
+                    )
+                except ValueError:
+                    assignee = None
+        elif norm_mode in ("by_rule", "rule", "dedicated_owner"):
+            assignee = _match_dedicated_owner_rule(
+                contact=locked_contact,
+                source_page=locked_contact.source_page,
+                source_form=locked_contact.source_form,
+                tag_names=[t.name for t in locked_contact.tags.all()],
+                tag_ids=[t.id for t in locked_contact.tags.all()],
+            )
+            if assignee is None:
+                assignee = resolve_tenant_lead_assignee(
+                    contact=locked_contact,
+                    source_page=locked_contact.source_page,
+                    source_form=locked_contact.source_form,
+                    tag_names=[t.name for t in locked_contact.tags.all()],
+                    tag_ids=[t.id for t in locked_contact.tags.all()],
+                )
+        else:
+            assignee = select_next_round_robin_member(marketers_only=marketers_only)
+
+        if assignee is not None:
+            AssignmentService.assign_contact_and_conversation(
+                contact=locked_contact,
+                assignee=assignee,
+                actor=None,
+                notify_assignee=True,
+            )
+        return assignee
 
 
 @transaction.atomic
@@ -477,13 +900,42 @@ def update_tenant_settings(*, tenant: Tenant, **changes) -> Tenant:
         "marketer_can_view_all_contacts",
         "notify_admins_on_new_lead",
         "assignment_mode",
+        "assignment_strategy",
+        "handoff_add_interested_tag",
         "settings",
     }
     update_fields = ["updated_at"]
     for key, value in changes.items():
         if key in allowed_fields and value is not None:
             setattr(tenant, key, value)
-            update_fields.append(key)
+            if key not in update_fields:
+                update_fields.append(key)
+
+    if "assignment_strategy" in changes and changes["assignment_strategy"] is not None:
+        strat = changes["assignment_strategy"]
+        mode_map = {
+            Tenant.AssignmentStrategy.SHARED_QUEUE: Tenant.AssignmentMode.MANUAL,
+            Tenant.AssignmentStrategy.DEDICATED_OWNER: Tenant.AssignmentMode.BY_SOURCE,
+            Tenant.AssignmentStrategy.ROUND_ROBIN: Tenant.AssignmentMode.ROUND_ROBIN,
+        }
+        mapped_mode = mode_map.get(strat)
+        if mapped_mode and tenant.assignment_mode != mapped_mode:
+            tenant.assignment_mode = mapped_mode
+            if "assignment_mode" not in update_fields:
+                update_fields.append("assignment_mode")
+    elif "assignment_mode" in changes and changes["assignment_mode"] is not None:
+        mode = changes["assignment_mode"]
+        strat_map = {
+            Tenant.AssignmentMode.MANUAL: Tenant.AssignmentStrategy.SHARED_QUEUE,
+            Tenant.AssignmentMode.BY_SOURCE: Tenant.AssignmentStrategy.DEDICATED_OWNER,
+            Tenant.AssignmentMode.ROUND_ROBIN: Tenant.AssignmentStrategy.ROUND_ROBIN,
+        }
+        mapped_strat = strat_map.get(mode)
+        if mapped_strat and tenant.assignment_strategy != mapped_strat:
+            tenant.assignment_strategy = mapped_strat
+            if "assignment_strategy" not in update_fields:
+                update_fields.append("assignment_strategy")
+
     tenant.save(update_fields=update_fields)
     return tenant
 

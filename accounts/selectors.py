@@ -30,7 +30,7 @@ def get_available_round_robin_memberships() -> QuerySet[Membership]:
             is_active=True,
             is_available=True,
             user__is_active=True,
-            role__in=[Membership.Role.MARKETER, Membership.Role.ADMIN, Membership.Role.OWNER],
+            role__in=[Membership.Role.MARKETER, Membership.Role.ADMIN],
         )
         .order_by(F("last_assigned_at").asc(nulls_first=True), "created_at")
     )

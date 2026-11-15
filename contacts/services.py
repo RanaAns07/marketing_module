@@ -940,80 +940,17 @@ class ContactService:
         actor: User | None = None,
         conversation_id: uuid.UUID | str | None = None,
     ) -> Contact:
-        tenant_id = require_tenant_id()
-        previous_assignee = contact.assigned_to
-        if (previous_assignee is None and assignee is None) or (
-            previous_assignee is not None
-            and assignee is not None
-            and previous_assignee.pk == assignee.pk
-        ):
-            return contact
+        from accounts.services import AssignmentService
 
-        contact.assigned_to = assignee
-        contact.last_activity_at = timezone.now()
-        contact.inactive_notified_at = None
-        contact.save(update_fields=["assigned_to", "last_activity_at", "inactive_notified_at", "updated_at"])
-
-        if assignee is not None:
-            desc = f"Assigned to {assignee.user.full_name}."
-        else:
-            desc = "Contact unassigned."
-
-        payload = {
-            "assigned_membership_id": str(assignee.id) if assignee else None,
-            "assigned_user_id": str(assignee.user_id) if assignee else None,
-            "previous_assigned_membership_id": str(previous_assignee.id) if previous_assignee else None,
-            "previous_assigned_user_id": str(previous_assignee.user_id) if previous_assignee else None,
-            "conversation_id": str(conversation_id) if conversation_id else None,
-            "notified": True,
-        }
-
-        log_contact_activity(
+        updated_contact, _, _ = AssignmentService.assign_contact_and_conversation(
             contact=contact,
+            assignee=assignee,
             actor=actor,
-            activity_type=Activity.ActivityType.ASSIGNMENT,
-            description=desc,
-            metadata=payload,
-            touch_activity=False,
+            notify_assignee=True,
+            log_activity=True,
+            publish_event=True,
         )
-
-        if assignee is not None:
-            notif_type = (
-                NotificationType.CONVERSATION_REASSIGNED
-                if previous_assignee is not None
-                else NotificationType.CONVERSATION_ASSIGNED
-            )
-            contact_label = contact.full_name or contact.email or contact.phone or "Contact"
-            title = (
-                f"Lead Transferred to You: {contact_label}"
-                if previous_assignee is not None
-                else f"Lead Assigned to You: {contact_label}"
-            )
-            link = (
-                f"/inbox/{conversation_id}"
-                if conversation_id
-                else f"/contacts/{contact.id}"
-            )
-            notify(
-                tenant=tenant_id,
-                users=[assignee.user],
-                type=notif_type,
-                payload={
-                    **payload,
-                    "title": title,
-                    "body": desc,
-                    "contact_id": str(contact.id),
-                },
-                link=link,
-            )
-
-        publish(
-            EventName.ASSIGNMENT_CHANGED,
-            tenant_id=tenant_id,
-            contact_id=contact.id,
-            payload=payload,
-        )
-        return contact
+        return updated_contact
 
     @staticmethod
     @transaction.atomic

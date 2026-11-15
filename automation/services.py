@@ -1512,30 +1512,19 @@ def execute_action_step(
         return StepExecution.Status.SUCCESS, {"status_id": str(target_status.id), "status_name": target_status.name}
 
     if subtype == WorkflowStep.Subtype.ASSIGN_MARKETER:
+        from accounts.services import AssignmentService
+
         mode = str(cfg.get("mode") or cfg.get("strategy") or "").strip().lower()
         member_ref = cfg.get("membership_id") or cfg.get("assignee_id") or cfg.get("user_id")
         if not mode:
             mode = "specific" if member_ref else "round_robin"
 
-        assignee: Membership | None = None
-        if mode == "specific":
-            assignee = _resolve_membership_from_ref(member_ref)
-        elif mode in ("by_rule", "rule"):
-            tag_names = [t.name for t in contact.tags.all()]
-            assignee = resolve_tenant_lead_assignee(
-                source_page=contact.source_page,
-                source_form=contact.source_form,
-                tag_names=tag_names,
-            )
-            if assignee is None:
-                assignee = select_next_round_robin_member(marketers_only=True)
-        else:
-            assignee = select_next_round_robin_member(
-                marketers_only=bool(cfg.get("marketers_only", True))
-            )
-
-        if assignee is not None:
-            ContactService.assign(contact=contact, assignee=assignee)
+        assignee = AssignmentService.assign_from_workflow(
+            contact=contact,
+            mode=mode,
+            member_ref=member_ref,
+            marketers_only=bool(cfg.get("marketers_only", False)),
+        )
         log_contact_activity(
             contact=contact,
             activity_type=Activity.ActivityType.WORKFLOW_ACTION,
