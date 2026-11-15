@@ -117,11 +117,13 @@ class RegisterView(APIView):
             phone=data.get("phone", ""),
             timezone_name=data.get("timezone", "UTC"),
         )
+        membership_data = MembershipSummarySerializer(result["membership"]).data
         return Response(
             {
                 "user": UserSerializer(result["user"]).data,
                 "tenant": TenantSummarySerializer(result["tenant"]).data,
-                "membership": MembershipSummarySerializer(result["membership"]).data,
+                "membership": membership_data,
+                "memberships": [membership_data],
                 "tokens": result["tokens"],
             },
             status=status.HTTP_201_CREATED,
