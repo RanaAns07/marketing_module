@@ -215,7 +215,7 @@ class MetaPageViewSet(TenantScopedViewSet):
     serializer_class = MetaPageSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin, IsEmailVerified]
     queryset = MetaPage.unscoped_objects.none()
-    http_method_names = ["get", "post", "head", "options"]
+    http_method_names = ["get", "post", "patch", "head", "options"]
 
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
@@ -267,7 +267,7 @@ class MetaPageViewSet(TenantScopedViewSet):
         request=MetaPageSelectSerializer,
         responses={200: MetaPageSerializer(many=True)},
     )
-    @action(detail=False, methods=["post"], url_path="select")
+    @action(detail=False, methods=["post", "patch"], url_path="select")
     def select(self, request):
         serializer = MetaPageSelectSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -408,7 +408,7 @@ class MetaLeadFormViewSet(TenantScopedViewSet):
         request=MetaFormSelectSerializer,
         responses={200: MetaLeadFormSerializer(many=True)},
     )
-    @action(detail=False, methods=["post"], url_path="select")
+    @action(detail=False, methods=["post", "patch"], url_path="select")
     def select(self, request):
         serializer = MetaFormSelectSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -440,7 +440,7 @@ class MetaLeadEventViewSet(TenantScopedViewSet):
     serializer_class = MetaLeadEventSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
     queryset = MetaLeadEvent.unscoped_objects.none()
-    http_method_names = ["get", "post", "head", "options"]
+    http_method_names = ["get", "post", "patch", "head", "options"]
 
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):

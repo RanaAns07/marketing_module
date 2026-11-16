@@ -65,7 +65,16 @@ class MetaPageSelectSerializer(serializers.Serializer):
     page_ids = serializers.ListField(
         child=serializers.CharField(max_length=128),
         allow_empty=True,
+        required=False,
     )
+    page_id = serializers.CharField(max_length=128, required=False)
+
+    def validate(self, attrs):
+        if "page_ids" not in attrs and "page_id" in attrs:
+            attrs["page_ids"] = [attrs["page_id"]]
+        if "page_ids" not in attrs:
+            attrs["page_ids"] = []
+        return attrs
 
 
 class MetaLeadFormSerializer(TenantScopedSerializer):
