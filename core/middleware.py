@@ -15,12 +15,19 @@ class TenantContextMiddleware:
 
         if raw_tenant_id and hasattr(request, "user") and request.user.is_authenticated:
             try:
-                tenant_uuid = uuid.UUID(str(raw_tenant_id))
+                from django.db.models import Q
                 from accounts.models import Membership
+                cleaned = str(raw_tenant_id).strip()
+                try:
+                    tenant_uuid = uuid.UUID(cleaned)
+                    tenant_filter = Q(tenant_id=tenant_uuid)
+                except (ValueError, TypeError):
+                    tenant_filter = Q(tenant__slug__iexact=cleaned)
+
                 membership = (
                     Membership.unscoped_objects.select_related("tenant", "user")
                     .filter(
-                        tenant_id=tenant_uuid,
+                        tenant_filter,
                         user=request.user,
                         is_active=True,
                         tenant__is_active=True,
@@ -31,7 +38,7 @@ class TenantContextMiddleware:
                     request.tenant = membership.tenant
                     request.membership = membership
                     set_current_tenant(membership.tenant)
-            except (ValueError, TypeError):
+            except Exception:
                 pass
 
         try:

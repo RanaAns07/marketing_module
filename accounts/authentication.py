@@ -2,6 +2,7 @@ from datetime import timezone as dt_timezone
 import hashlib
 import hmac
 import uuid
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from drf_spectacular.extensions import OpenApiAuthenticationExtension
@@ -33,15 +34,17 @@ def resolve_request_tenant_membership(request, user):
     raw_tenant_id = request.headers.get("X-Tenant") or request.META.get("HTTP_X_TENANT")
     if not raw_tenant_id:
         return None
+    cleaned = str(raw_tenant_id).strip()
     try:
-        tenant_uuid = uuid.UUID(str(raw_tenant_id))
-    except (ValueError, TypeError) as exc:
-        raise PermissionDenied("Invalid X-Tenant header UUID.") from exc
+        tenant_uuid = uuid.UUID(cleaned)
+        tenant_filter = Q(tenant_id=tenant_uuid)
+    except (ValueError, TypeError):
+        tenant_filter = Q(tenant__slug__iexact=cleaned)
 
     membership = (
         Membership.unscoped_objects.select_related("tenant", "user")
         .filter(
-            tenant_id=tenant_uuid,
+            tenant_filter,
             user=user,
             is_active=True,
             tenant__is_active=True,
