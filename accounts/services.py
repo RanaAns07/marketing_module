@@ -1126,12 +1126,27 @@ def activate_team_member(
 @transaction.atomic
 def set_member_availability(
     *,
-    membership: Membership,
+    membership: Membership | None = None,
+    target_membership: Membership | None = None,
+    actor_membership: Membership | None = None,
     is_available: bool,
 ) -> Membership:
-    membership.is_available = is_available
-    membership.save(update_fields=["is_available", "updated_at"])
-    return membership
+    target = target_membership or membership
+    if target is None:
+        raise ValueError("membership or target_membership is required.")
+    if actor_membership is not None:
+        if (
+            actor_membership.id != target.id
+            and actor_membership.role not in (Membership.Role.OWNER, Membership.Role.ADMIN)
+        ):
+            raise ApplicationError(
+                detail="You do not have permission to modify another member's availability.",
+                code="permission_denied",
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+    target.is_available = is_available
+    target.save(update_fields=["is_available", "updated_at"])
+    return target
 
 
 @transaction.atomic
