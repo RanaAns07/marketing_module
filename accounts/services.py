@@ -51,7 +51,33 @@ def send_platform_email(
     body: str,
     html_content: str | None = None,
 ) -> bool:
-    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@ads.fitverx.com")
+    api_key = str(getattr(settings, "SENDGRID_API_KEY", "") or getattr(settings, "EMAIL_HOST_PASSWORD", "") or "").strip()
+    from_email = str(getattr(settings, "DEFAULT_FROM_EMAIL", "") or "marketing@fitverx.com").strip()
+    if from_email.endswith("@ads.fitverx.com") or from_email.endswith("@crm.local"):
+        from_email = "marketing@fitverx.com"
+
+    if api_key and api_key.startswith("SG."):
+        import requests
+        payload = {
+            "personalizations": [{"to": [{"email": to_email}]}],
+            "from": {"email": from_email, "name": "Fitverx"},
+            "subject": subject,
+            "content": [{"type": "text/plain", "value": body}],
+        }
+        if html_content:
+            payload["content"].append({"type": "text/html", "value": html_content})
+        try:
+            resp = requests.post(
+                "https://api.sendgrid.com/v3/mail/send",
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                json=payload,
+                timeout=10,
+            )
+            if resp.status_code in (200, 201, 202):
+                return True
+        except Exception:
+            pass
+
     try:
         send_mail(
             subject=subject,
@@ -59,7 +85,7 @@ def send_platform_email(
             from_email=from_email,
             recipient_list=[to_email],
             html_message=html_content,
-            fail_silently=True,
+            fail_silently=False,
         )
         return True
     except Exception:
