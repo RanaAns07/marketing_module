@@ -36,7 +36,11 @@ _INVITE_SALT = "platform-tenant-invitation"
 
 
 def _get_platform_base_url() -> str:
-    base = getattr(settings, "PUBLIC_BASE_URL", "") or "https://ads.fitverx.com"
+    base = (
+        getattr(settings, "FRONTEND_BASE_URL", "")
+        or getattr(settings, "PUBLIC_BASE_URL", "")
+        or "https://marketing.fitverx.com"
+    )
     return str(base).rstrip("/")
 
 

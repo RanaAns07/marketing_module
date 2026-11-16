@@ -14,7 +14,7 @@ SECRET_KEY = _base.SECRET_KEY
 
 DEBUG = False
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1", "ads.fitverx.com", "35.153.171.83"])
-CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=["https://ads.fitverx.com", "http://ads.fitverx.com"])
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=["https://ads.fitverx.com", "http://ads.fitverx.com", "https://marketing.fitverx.com"])
 
 if not SECRET_KEY or SECRET_KEY == "insecure-dev-secret-key-for-local-setup-only-32chars":
     raise ImproperlyConfigured("SECRET_KEY must be configured in production.")
@@ -31,7 +31,14 @@ if env.bool("ENABLE_TEST_DOUBLES", default=False):
     raise ImproperlyConfigured("ENABLE_TEST_DOUBLES cannot be enabled in production.")
 ENABLE_TEST_DOUBLES = False
 
-CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
+CORS_ALLOWED_ORIGINS = env.list(
+    "CORS_ALLOWED_ORIGINS",
+    default=[
+        "https://marketing.fitverx.com",
+        "http://localhost:3000",
+        "http://localhost:5173",
+    ],
+)
 CORS_ALLOW_ALL_ORIGINS = env.bool("CORS_ALLOW_ALL_ORIGINS", default=False)
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

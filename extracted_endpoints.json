@@ -1,0 +1,3151 @@
+[
+  {
+    "method": "GET",
+    "path": "/api/v1/appointments/",
+    "operation_id": "api_v1_appointments_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "contact",
+      "ordering",
+      "page",
+      "page_size",
+      "search",
+      "status"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/appointments/",
+    "operation_id": "api_v1_appointments_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/appointments/{id}/",
+    "operation_id": "api_v1_appointments_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/appointments/{id}/",
+    "operation_id": "api_v1_appointments_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/appointments/{id}/",
+    "operation_id": "api_v1_appointments_partial_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/appointments/{id}/",
+    "operation_id": "api_v1_appointments_destroy",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/appointments/{id}/cancel/",
+    "operation_id": "api_v1_appointments_cancel_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/appointments/{id}/complete/",
+    "operation_id": "api_v1_appointments_complete_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/appointments/{id}/reschedule/",
+    "operation_id": "api_v1_appointments_reschedule_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/change-email/",
+    "operation_id": "api_v1_auth_change_email_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/forgot-password/",
+    "operation_id": "api_v1_auth_forgot_password_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/invitations/accept/",
+    "operation_id": "api_v1_auth_invitations_accept_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/login/",
+    "operation_id": "api_v1_auth_login_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/logout/",
+    "operation_id": "api_v1_auth_logout_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/logout-all/",
+    "operation_id": "api_v1_auth_logout_all_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/auth/me/",
+    "operation_id": "api_v1_auth_me_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/auth/me/",
+    "operation_id": "api_v1_auth_me_partial_update",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/password/change/",
+    "operation_id": "api_v1_auth_password_change_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/refresh/",
+    "operation_id": "api_v1_auth_refresh_create",
+    "summary": "",
+    "description": "Takes a refresh type JSON web token and returns an access type JSON web\ntoken if the refresh token is valid.",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/register/",
+    "operation_id": "api_v1_auth_register_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/resend-verification/",
+    "operation_id": "api_v1_auth_resend_verification_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/reset-password/",
+    "operation_id": "api_v1_auth_reset_password_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/switch-tenant/",
+    "operation_id": "api_v1_auth_switch_tenant_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/auth/tenants/",
+    "operation_id": "api_v1_auth_tenants_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/auth/verify-email/",
+    "operation_id": "api_v1_auth_verify_email_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/verify-email/",
+    "operation_id": "api_v1_auth_verify_email_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/auth/verify-email-change/",
+    "operation_id": "api_v1_auth_verify_email_change_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/verify-email-change/",
+    "operation_id": "api_v1_auth_verify_email_change_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/automation/contacts/{contact_id}/enrollments/",
+    "operation_id": "automation_contact_enrollments_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "contact_id",
+      "status"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/automation/contacts/{contact_id}/executions/",
+    "operation_id": "automation_contact_executions_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "contact_id",
+      "status"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/automation/contacts/{contact_id}/pause-all/",
+    "operation_id": "automation_contact_pause_all",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "contact_id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/automation/contacts/{contact_id}/resume-all/",
+    "operation_id": "automation_contact_resume_all",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "contact_id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/automation/enrollments/",
+    "operation_id": "api_v1_automation_enrollments_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/automation/enrollments/",
+    "operation_id": "automation_enrollments_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/automation/enrollments/{id}/",
+    "operation_id": "api_v1_automation_enrollments_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/automation/enrollments/{id}/executions/",
+    "operation_id": "automation_enrollment_executions",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id",
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/automation/enrollments/{id}/pause/",
+    "operation_id": "automation_enrollment_pause",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/automation/enrollments/{id}/resume/",
+    "operation_id": "automation_enrollment_resume",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/automation/enrollments/{id}/unenroll/",
+    "operation_id": "automation_enrollment_unenroll",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/automation/enrollments/pause-all/",
+    "operation_id": "automation_enrollments_pause_all",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/automation/enrollments/resume-all/",
+    "operation_id": "automation_enrollments_resume_all",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/automation/executions/",
+    "operation_id": "api_v1_automation_executions_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "cursor",
+      "ordering",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/automation/executions/{id}/",
+    "operation_id": "api_v1_automation_executions_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/automation/workflows/",
+    "operation_id": "api_v1_automation_workflows_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/automation/workflows/",
+    "operation_id": "api_v1_automation_workflows_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/automation/workflows/{id}/",
+    "operation_id": "api_v1_automation_workflows_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/automation/workflows/{id}/",
+    "operation_id": "api_v1_automation_workflows_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/automation/workflows/{id}/",
+    "operation_id": "api_v1_automation_workflows_partial_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/automation/workflows/{id}/",
+    "operation_id": "api_v1_automation_workflows_destroy",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/automation/workflows/{id}/activate/",
+    "operation_id": "automation_workflow_activate",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/automation/workflows/{id}/duplicate/",
+    "operation_id": "automation_workflow_duplicate",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/automation/workflows/{id}/enroll/",
+    "operation_id": "automation_workflow_enroll",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id",
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/automation/workflows/{id}/enrollments/",
+    "operation_id": "automation_workflow_enrollments_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "contact",
+      "id",
+      "ordering",
+      "page",
+      "page_size",
+      "search",
+      "status"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/automation/workflows/{id}/executions/",
+    "operation_id": "automation_workflow_executions_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "contact",
+      "id",
+      "ordering",
+      "page",
+      "page_size",
+      "search",
+      "status"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/automation/workflows/{id}/pause/",
+    "operation_id": "automation_workflow_pause",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/automation/workflows/{id}/resume/",
+    "operation_id": "automation_workflow_resume",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/automation/workflows/{id}/unenroll/",
+    "operation_id": "automation_workflow_unenroll",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/automation/workflows/{id}/validate/",
+    "operation_id": "automation_workflow_validate_detail",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/automation/workflows/validate/",
+    "operation_id": "automation_workflows_validate_collection",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/contacts/",
+    "operation_id": "api_v1_contacts_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/contacts/",
+    "operation_id": "api_v1_contacts_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/contacts/{id}/",
+    "operation_id": "api_v1_contacts_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/contacts/{id}/",
+    "operation_id": "api_v1_contacts_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/contacts/{id}/",
+    "operation_id": "api_v1_contacts_partial_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/contacts/{id}/",
+    "operation_id": "api_v1_contacts_destroy",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/contacts/{id}/appointments/",
+    "operation_id": "api_v1_contacts_appointments_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/contacts/{id}/appointments/",
+    "operation_id": "api_v1_contacts_appointments_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/contacts/{id}/assign/",
+    "operation_id": "api_v1_contacts_assign_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/contacts/{id}/notes/",
+    "operation_id": "api_v1_contacts_notes_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/contacts/{id}/status/",
+    "operation_id": "api_v1_contacts_status_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/contacts/{id}/subscriptions/",
+    "operation_id": "api_v1_contacts_subscriptions_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/contacts/{id}/subscriptions/",
+    "operation_id": "api_v1_contacts_subscriptions_partial_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/contacts/{id}/tags/add/",
+    "operation_id": "api_v1_contacts_tags_add_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/contacts/{id}/tags/remove/",
+    "operation_id": "api_v1_contacts_tags_remove_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/contacts/{id}/tasks/",
+    "operation_id": "api_v1_contacts_tasks_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/contacts/{id}/tasks/",
+    "operation_id": "api_v1_contacts_tasks_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/contacts/{id}/timeline/",
+    "operation_id": "api_v1_contacts_timeline_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/contacts/bulk-assign/",
+    "operation_id": "api_v1_contacts_bulk_assign_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/contacts/bulk-tags/add/",
+    "operation_id": "api_v1_contacts_bulk_tags_add_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/contacts/bulk-tags/remove/",
+    "operation_id": "api_v1_contacts_bulk_tags_remove_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/custom-fields/",
+    "operation_id": "api_v1_custom_fields_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "field_type",
+      "is_required",
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/custom-fields/",
+    "operation_id": "api_v1_custom_fields_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/custom-fields/{id}/",
+    "operation_id": "api_v1_custom_fields_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/custom-fields/{id}/",
+    "operation_id": "api_v1_custom_fields_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/custom-fields/{id}/",
+    "operation_id": "api_v1_custom_fields_partial_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/custom-fields/{id}/",
+    "operation_id": "api_v1_custom_fields_destroy",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/external/appointments/",
+    "operation_id": "api_v1_external_appointments_create",
+    "summary": "Book an appointment for a contact",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/external/appointments/{id}/",
+    "operation_id": "api_v1_external_appointments_partial_update",
+    "summary": "Update appointment status (booked, cancelled, completed, rescheduled)",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/external/contacts/{external_id_or_id}/",
+    "operation_id": "api_v1_external_contacts_retrieve",
+    "summary": "Get contact by external_id or UUID",
+    "description": "",
+    "parameters": [
+      "external_id_or_id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/external/contacts/{id}/tags/",
+    "operation_id": "api_v1_external_contacts_tags_create",
+    "summary": "Add or remove tags on a contact",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/external/contacts/upsert/",
+    "operation_id": "api_v1_external_contacts_upsert_create",
+    "summary": "Upsert contact from external platform",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/external/events/",
+    "operation_id": "api_v1_external_events_create",
+    "summary": "Ingest signed external business event (purchases, subscriptions, payments, appointments)",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/health/",
+    "operation_id": "api_v1_health_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/inbox/assignment-rules/",
+    "operation_id": "api_v1_inbox_assignment_rules_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/inbox/assignment-rules/",
+    "operation_id": "api_v1_inbox_assignment_rules_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/inbox/assignment-rules/{id}/",
+    "operation_id": "api_v1_inbox_assignment_rules_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/inbox/assignment-rules/{id}/",
+    "operation_id": "api_v1_inbox_assignment_rules_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/inbox/assignment-rules/{id}/",
+    "operation_id": "api_v1_inbox_assignment_rules_partial_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/inbox/assignment-rules/{id}/",
+    "operation_id": "api_v1_inbox_assignment_rules_destroy",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/inbox/assignment-settings/",
+    "operation_id": "api_v1_inbox_assignment_settings_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/inbox/assignment-settings/",
+    "operation_id": "api_v1_inbox_assignment_settings_update",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/inbox/assignment-settings/",
+    "operation_id": "api_v1_inbox_assignment_settings_partial_update",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/inbox/conversations/",
+    "operation_id": "api_v1_inbox_conversations_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/inbox/conversations/",
+    "operation_id": "api_v1_inbox_conversations_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/inbox/conversations/{id}/",
+    "operation_id": "api_v1_inbox_conversations_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/inbox/conversations/{id}/",
+    "operation_id": "api_v1_inbox_conversations_partial_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/inbox/conversations/{id}/assign/",
+    "operation_id": "api_v1_inbox_conversations_assign_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/inbox/conversations/{id}/claim/",
+    "operation_id": "api_v1_inbox_conversations_claim_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/inbox/conversations/{id}/contact-status/",
+    "operation_id": "api_v1_inbox_conversations_contact_status_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/inbox/conversations/{id}/contact-tags/",
+    "operation_id": "api_v1_inbox_conversations_contact_tags_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/inbox/conversations/{id}/mark-read/",
+    "operation_id": "api_v1_inbox_conversations_mark_read_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/inbox/conversations/{id}/notes/",
+    "operation_id": "api_v1_inbox_conversations_notes_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/inbox/conversations/{id}/notes/",
+    "operation_id": "api_v1_inbox_conversations_notes_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/inbox/conversations/{id}/pause-automations/",
+    "operation_id": "api_v1_inbox_conversations_pause_automations_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/inbox/conversations/{id}/reply/",
+    "operation_id": "api_v1_inbox_conversations_reply_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/inbox/conversations/{id}/resume-automations/",
+    "operation_id": "api_v1_inbox_conversations_resume_automations_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/inbox/conversations/{id}/status/",
+    "operation_id": "api_v1_inbox_conversations_status_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/inbox/conversations/{id}/status/",
+    "operation_id": "api_v1_inbox_conversations_status_partial_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/inbox/conversations/{id}/thread/",
+    "operation_id": "api_v1_inbox_conversations_thread_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/inbox/conversations/unread-counts/",
+    "operation_id": "api_v1_inbox_conversations_unread_counts_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/inbox/team-workload/",
+    "operation_id": "api_v1_inbox_team_workload_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/inbox/unread-counts/",
+    "operation_id": "api_v1_inbox_unread_counts_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/inbox/workload/",
+    "operation_id": "api_v1_inbox_workload_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/integrations/connections/",
+    "operation_id": "api_v1_integrations_connections_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/integrations/connections/",
+    "operation_id": "api_v1_integrations_connections_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/integrations/connections/{id}/",
+    "operation_id": "api_v1_integrations_connections_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/integrations/connections/{id}/",
+    "operation_id": "api_v1_integrations_connections_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/integrations/connections/{id}/",
+    "operation_id": "api_v1_integrations_connections_partial_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/integrations/connections/{id}/",
+    "operation_id": "api_v1_integrations_connections_destroy",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/integrations/connections/{id}/sync-whatsapp-templates/",
+    "operation_id": "integrations_connection_sync_whatsapp_templates",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id",
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/integrations/connections/{id}/test/",
+    "operation_id": "api_v1_integrations_connections_test_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/integrations/connections/{id}/test-connection/",
+    "operation_id": "api_v1_integrations_connections_test_connection_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/integrations/connections/sync-whatsapp-templates/",
+    "operation_id": "integrations_sync_whatsapp_templates",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/lead-statuses/",
+    "operation_id": "api_v1_lead_statuses_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/lead-statuses/",
+    "operation_id": "api_v1_lead_statuses_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/lead-statuses/{id}/",
+    "operation_id": "api_v1_lead_statuses_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/lead-statuses/{id}/",
+    "operation_id": "api_v1_lead_statuses_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/lead-statuses/{id}/",
+    "operation_id": "api_v1_lead_statuses_partial_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/lead-statuses/{id}/",
+    "operation_id": "api_v1_lead_statuses_destroy",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/leads/callback/",
+    "operation_id": "leads_meta_oauth_callback_get",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "code",
+      "redirect_uri",
+      "state"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/leads/callback/",
+    "operation_id": "leads_meta_oauth_callback_post",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/leads/connect-url/",
+    "operation_id": "leads_meta_connect_url",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "redirect_uri"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/leads/connection/",
+    "operation_id": "leads_meta_connection_status",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/leads/connection/",
+    "operation_id": "leads_meta_connection_disconnect_from_status",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/leads/disconnect/",
+    "operation_id": "leads_meta_disconnect",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/leads/events/",
+    "operation_id": "leads_meta_events_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "ordering",
+      "page",
+      "page_size",
+      "search",
+      "status"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/leads/events/",
+    "operation_id": "api_v1_leads_events_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/leads/events/{id}/",
+    "operation_id": "api_v1_leads_events_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/leads/events/{id}/retry/",
+    "operation_id": "leads_meta_event_retry",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/leads/forms/",
+    "operation_id": "leads_meta_forms_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "ordering",
+      "page",
+      "page_id",
+      "page_size",
+      "search",
+      "sync"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/leads/forms/",
+    "operation_id": "api_v1_leads_forms_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/leads/forms/{id}/",
+    "operation_id": "api_v1_leads_forms_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/leads/forms/{id}/",
+    "operation_id": "leads_meta_form_partial_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/leads/forms/{id}/questions/",
+    "operation_id": "leads_meta_form_questions",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/leads/forms/select/",
+    "operation_id": "leads_meta_forms_select",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/leads/pages/",
+    "operation_id": "leads_meta_pages_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "ordering",
+      "page",
+      "page_size",
+      "search",
+      "sync"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/leads/pages/",
+    "operation_id": "api_v1_leads_pages_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/leads/pages/{id}/",
+    "operation_id": "api_v1_leads_pages_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/leads/pages/{id}/forms/",
+    "operation_id": "leads_meta_page_forms_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id",
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/leads/pages/select/",
+    "operation_id": "leads_meta_pages_select",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/leads/reconnect/",
+    "operation_id": "leads_meta_reconnect",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/messaging/broadcasts/",
+    "operation_id": "api_v1_messaging_broadcasts_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/messaging/broadcasts/",
+    "operation_id": "api_v1_messaging_broadcasts_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/messaging/broadcasts/{id}/",
+    "operation_id": "api_v1_messaging_broadcasts_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/messaging/broadcasts/{id}/",
+    "operation_id": "api_v1_messaging_broadcasts_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/messaging/broadcasts/{id}/",
+    "operation_id": "api_v1_messaging_broadcasts_partial_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/messaging/broadcasts/{id}/",
+    "operation_id": "api_v1_messaging_broadcasts_destroy",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/messaging/broadcasts/{id}/cancel/",
+    "operation_id": "api_v1_messaging_broadcasts_cancel_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/messaging/broadcasts/{id}/progress/",
+    "operation_id": "api_v1_messaging_broadcasts_progress_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/messaging/broadcasts/{id}/schedule/",
+    "operation_id": "api_v1_messaging_broadcasts_schedule_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/messaging/messages/",
+    "operation_id": "api_v1_messaging_messages_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "cursor",
+      "ordering",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/messaging/messages/{id}/",
+    "operation_id": "api_v1_messaging_messages_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/messaging/messages/send/",
+    "operation_id": "api_v1_messaging_messages_send_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/messaging/segment-count/",
+    "operation_id": "api_v1_messaging_segment_count_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/messaging/sms/segment-count/",
+    "operation_id": "api_v1_messaging_sms_segment_count_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/messaging/templates/",
+    "operation_id": "api_v1_messaging_templates_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/messaging/templates/",
+    "operation_id": "api_v1_messaging_templates_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/messaging/templates/{id}/",
+    "operation_id": "api_v1_messaging_templates_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/messaging/templates/{id}/",
+    "operation_id": "api_v1_messaging_templates_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/messaging/templates/{id}/",
+    "operation_id": "api_v1_messaging_templates_partial_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/messaging/templates/{id}/",
+    "operation_id": "api_v1_messaging_templates_destroy",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/messaging/templates/{id}/preview/",
+    "operation_id": "messaging_template_preview_detail",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/messaging/templates/preview/",
+    "operation_id": "messaging_template_preview_adhoc",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/messaging/templates/sync/",
+    "operation_id": "api_v1_messaging_templates_sync_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/messaging/unsubscribe/{token}/",
+    "operation_id": "api_v1_messaging_unsubscribe_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "token"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/messaging/unsubscribe/{token}/",
+    "operation_id": "api_v1_messaging_unsubscribe_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "token"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/messaging/unsubscribe/confirm/",
+    "operation_id": "api_v1_messaging_unsubscribe_confirm_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/messaging/unsubscribe/confirm/",
+    "operation_id": "api_v1_messaging_unsubscribe_confirm_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/messaging/whatsapp-window/{contact_id}/",
+    "operation_id": "api_v1_messaging_whatsapp_window_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "contact_id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/notifications/",
+    "operation_id": "api_v1_notifications_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "is_read",
+      "notification_type",
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/notifications/{id}/",
+    "operation_id": "api_v1_notifications_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/notifications/{id}/read/",
+    "operation_id": "api_v1_notifications_read_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/notifications/mark-all-read/",
+    "operation_id": "api_v1_notifications_mark_all_read_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/notifications/preferences/",
+    "operation_id": "api_v1_notifications_preferences_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/notifications/preferences/",
+    "operation_id": "api_v1_notifications_preferences_partial_update",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/notifications/unread-count/",
+    "operation_id": "api_v1_notifications_unread_count_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/reports/dashboard/",
+    "operation_id": "api_v1_reports_dashboard_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "end_date",
+      "preset",
+      "start_date"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/reports/lead-acquisition/",
+    "operation_id": "api_v1_reports_lead_acquisition_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "bucket",
+      "end_date",
+      "preset",
+      "start_date"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/reports/leads/",
+    "operation_id": "api_v1_reports_leads_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "bucket",
+      "end_date",
+      "preset",
+      "start_date"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/reports/messaging/",
+    "operation_id": "api_v1_reports_messaging_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "end_date",
+      "preset",
+      "start_date"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/reports/pipeline/",
+    "operation_id": "api_v1_reports_pipeline_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "top_tags"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/reports/team-workload/",
+    "operation_id": "api_v1_reports_team_workload_list",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/reports/workflow-performance/",
+    "operation_id": "api_v1_reports_workflow_performance_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "end_date",
+      "preset",
+      "start_date"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/reports/workflows/",
+    "operation_id": "api_v1_reports_workflows_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "end_date",
+      "preset",
+      "start_date"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/reports/workload/",
+    "operation_id": "api_v1_reports_workload_list",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tags/",
+    "operation_id": "api_v1_tags_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/tags/",
+    "operation_id": "api_v1_tags_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tags/{id}/",
+    "operation_id": "api_v1_tags_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/tags/{id}/",
+    "operation_id": "api_v1_tags_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/tags/{id}/",
+    "operation_id": "api_v1_tags_partial_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/tags/{id}/",
+    "operation_id": "api_v1_tags_destroy",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tasks/",
+    "operation_id": "api_v1_tasks_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "assignee",
+      "contact",
+      "from_workflow",
+      "ordering",
+      "page",
+      "page_size",
+      "search",
+      "status"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/tasks/",
+    "operation_id": "api_v1_tasks_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tasks/{id}/",
+    "operation_id": "api_v1_tasks_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/tasks/{id}/",
+    "operation_id": "api_v1_tasks_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/tasks/{id}/",
+    "operation_id": "api_v1_tasks_partial_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/tasks/{id}/",
+    "operation_id": "api_v1_tasks_destroy",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/tasks/{id}/complete/",
+    "operation_id": "api_v1_tasks_complete_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/team/",
+    "operation_id": "api_v1_team_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "is_active",
+      "is_available",
+      "ordering",
+      "page",
+      "page_size",
+      "role",
+      "search"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/team/",
+    "operation_id": "api_v1_team_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/team/{id}/",
+    "operation_id": "api_v1_team_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/team/{id}/",
+    "operation_id": "api_v1_team_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/team/{id}/",
+    "operation_id": "api_v1_team_partial_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/team/{id}/",
+    "operation_id": "api_v1_team_destroy",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/team/{id}/activate/",
+    "operation_id": "api_v1_team_activate_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/team/{id}/availability/",
+    "operation_id": "api_v1_team_availability_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/team/{id}/deactivate/",
+    "operation_id": "api_v1_team_deactivate_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/team/{id}/role/",
+    "operation_id": "api_v1_team_role_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tenant/api-keys/",
+    "operation_id": "api_v1_tenant_api_keys_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/tenant/api-keys/",
+    "operation_id": "api_v1_tenant_api_keys_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tenant/api-keys/{id}/",
+    "operation_id": "api_v1_tenant_api_keys_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/tenant/api-keys/{id}/",
+    "operation_id": "api_v1_tenant_api_keys_destroy",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/tenant/api-keys/{id}/revoke/",
+    "operation_id": "api_v1_tenant_api_keys_revoke_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/tenant/api-keys/{id}/rotate/",
+    "operation_id": "api_v1_tenant_api_keys_rotate_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/tenant/deactivate/",
+    "operation_id": "api_v1_tenant_deactivate_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tenant/invitations/",
+    "operation_id": "api_v1_tenant_invitations_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/tenant/invitations/",
+    "operation_id": "api_v1_tenant_invitations_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tenant/invitations/{id}/",
+    "operation_id": "api_v1_tenant_invitations_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/tenant/invitations/{id}/",
+    "operation_id": "api_v1_tenant_invitations_destroy",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/tenant/invitations/{id}/resend/",
+    "operation_id": "api_v1_tenant_invitations_resend_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/tenant/invitations/{id}/revoke/",
+    "operation_id": "api_v1_tenant_invitations_revoke_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/tenant/leave/",
+    "operation_id": "api_v1_tenant_leave_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tenant/onboarding/",
+    "operation_id": "api_v1_tenant_onboarding_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/tenant/reactivate/",
+    "operation_id": "api_v1_tenant_reactivate_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tenant/settings/",
+    "operation_id": "api_v1_tenant_settings_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/tenant/settings/",
+    "operation_id": "api_v1_tenant_settings_partial_update",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/tenant/transfer-ownership/",
+    "operation_id": "api_v1_tenant_transfer_ownership_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/usage/daily/",
+    "operation_id": "api_v1_usage_daily_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "day"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/usage/export/",
+    "operation_id": "api_v1_usage_export_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "day",
+      "month"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/usage/export/csv/",
+    "operation_id": "api_v1_usage_export_csv_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "day",
+      "month"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/usage/monthly/",
+    "operation_id": "api_v1_usage_monthly_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "month"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/usage/rate-cards/",
+    "operation_id": "api_v1_usage_rate_cards_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/usage/rate-cards/",
+    "operation_id": "api_v1_usage_rate_cards_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/usage/rate-cards/{id}/",
+    "operation_id": "api_v1_usage_rate_cards_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/usage/rate-cards/{id}/",
+    "operation_id": "api_v1_usage_rate_cards_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/usage/rate-cards/{id}/",
+    "operation_id": "api_v1_usage_rate_cards_partial_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/usage/rate-cards/{id}/",
+    "operation_id": "api_v1_usage_rate_cards_destroy",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/usage/records/",
+    "operation_id": "api_v1_usage_records_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "cursor",
+      "ordering",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/usage/summary/daily/",
+    "operation_id": "api_v1_usage_summary_daily_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "day"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/usage/summary/monthly/",
+    "operation_id": "api_v1_usage_summary_monthly_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "month"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/webhooks/deliveries/",
+    "operation_id": "api_v1_webhooks_deliveries_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "cursor",
+      "ordering",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/webhooks/deliveries/{id}/",
+    "operation_id": "api_v1_webhooks_deliveries_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/webhooks/deliveries/{id}/redeliver/",
+    "operation_id": "api_v1_webhooks_deliveries_redeliver_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/webhooks/endpoints/",
+    "operation_id": "api_v1_webhooks_endpoints_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/webhooks/endpoints/",
+    "operation_id": "api_v1_webhooks_endpoints_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/webhooks/endpoints/{id}/",
+    "operation_id": "api_v1_webhooks_endpoints_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/webhooks/endpoints/{id}/",
+    "operation_id": "api_v1_webhooks_endpoints_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/webhooks/endpoints/{id}/",
+    "operation_id": "api_v1_webhooks_endpoints_partial_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/webhooks/endpoints/{id}/",
+    "operation_id": "api_v1_webhooks_endpoints_destroy",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/webhooks/endpoints/{id}/ping/",
+    "operation_id": "api_v1_webhooks_endpoints_ping_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/webhooks/endpoints/{id}/rotate-secret/",
+    "operation_id": "api_v1_webhooks_endpoints_rotate_secret_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/webhooks/external-events/",
+    "operation_id": "api_v1_webhooks_external_events_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "cursor",
+      "ordering",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/webhooks/external-events/{id}/",
+    "operation_id": "api_v1_webhooks_external_events_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/webhooks/external-events/{id}/replay/",
+    "operation_id": "api_v1_webhooks_external_events_replay_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/webhooks/meta/",
+    "operation_id": "api_v1_webhooks_meta_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "hub.challenge",
+      "hub.mode",
+      "hub.verify_token"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/webhooks/meta/",
+    "operation_id": "api_v1_webhooks_meta_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/webhooks/sendgrid/{webhook_token}/",
+    "operation_id": "api_v1_webhooks_sendgrid_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "webhook_token"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/webhooks/sendgrid/{webhook_token}/inbound/",
+    "operation_id": "api_v1_webhooks_sendgrid_inbound_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "webhook_token"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/webhooks/twilio/sms/",
+    "operation_id": "api_v1_webhooks_twilio_sms_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/webhooks/twilio/sms/inbound/",
+    "operation_id": "api_v1_webhooks_twilio_sms_inbound_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/webhooks/twilio/sms/status/",
+    "operation_id": "api_v1_webhooks_twilio_sms_status_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/webhooks/twilio/whatsapp/",
+    "operation_id": "api_v1_webhooks_twilio_whatsapp_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/webhooks/twilio/whatsapp/inbound/",
+    "operation_id": "api_v1_webhooks_twilio_whatsapp_inbound_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/webhooks/twilio/whatsapp/status/",
+    "operation_id": "api_v1_webhooks_twilio_whatsapp_status_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/webhooks/unsubscribe/{token}/",
+    "operation_id": "api_v1_webhooks_unsubscribe_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "token"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/webhooks/unsubscribe/{token}/",
+    "operation_id": "api_v1_webhooks_unsubscribe_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "token"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/webhooks/unsubscribe/confirm/",
+    "operation_id": "api_v1_webhooks_unsubscribe_confirm_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/webhooks/unsubscribe/confirm/",
+    "operation_id": "api_v1_webhooks_unsubscribe_confirm_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/health/",
+    "operation_id": "health_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/webhooks/deliveries/",
+    "operation_id": "webhooks_deliveries_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "cursor",
+      "ordering",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/webhooks/deliveries/{id}/",
+    "operation_id": "webhooks_deliveries_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/webhooks/deliveries/{id}/redeliver/",
+    "operation_id": "webhooks_deliveries_redeliver_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/webhooks/endpoints/",
+    "operation_id": "webhooks_endpoints_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "ordering",
+      "page",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/webhooks/endpoints/",
+    "operation_id": "webhooks_endpoints_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/webhooks/endpoints/{id}/",
+    "operation_id": "webhooks_endpoints_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/webhooks/endpoints/{id}/",
+    "operation_id": "webhooks_endpoints_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/webhooks/endpoints/{id}/",
+    "operation_id": "webhooks_endpoints_partial_update",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/webhooks/endpoints/{id}/",
+    "operation_id": "webhooks_endpoints_destroy",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/webhooks/endpoints/{id}/ping/",
+    "operation_id": "webhooks_endpoints_ping_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/webhooks/endpoints/{id}/rotate-secret/",
+    "operation_id": "webhooks_endpoints_rotate_secret_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/webhooks/external-events/",
+    "operation_id": "webhooks_external_events_list",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "cursor",
+      "ordering",
+      "page_size",
+      "search"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/webhooks/external-events/{id}/",
+    "operation_id": "webhooks_external_events_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/webhooks/external-events/{id}/replay/",
+    "operation_id": "webhooks_external_events_replay_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "id"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/webhooks/meta/",
+    "operation_id": "webhooks_meta_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "hub.challenge",
+      "hub.mode",
+      "hub.verify_token"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/webhooks/meta/",
+    "operation_id": "webhooks_meta_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/webhooks/sendgrid/{webhook_token}/",
+    "operation_id": "webhooks_sendgrid_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "webhook_token"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/webhooks/sendgrid/{webhook_token}/inbound/",
+    "operation_id": "webhooks_sendgrid_inbound_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "webhook_token"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/webhooks/twilio/sms/",
+    "operation_id": "webhooks_twilio_sms_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/webhooks/twilio/sms/inbound/",
+    "operation_id": "webhooks_twilio_sms_inbound_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/webhooks/twilio/sms/status/",
+    "operation_id": "webhooks_twilio_sms_status_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/webhooks/twilio/whatsapp/",
+    "operation_id": "webhooks_twilio_whatsapp_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/webhooks/twilio/whatsapp/inbound/",
+    "operation_id": "webhooks_twilio_whatsapp_inbound_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/webhooks/twilio/whatsapp/status/",
+    "operation_id": "webhooks_twilio_whatsapp_status_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "GET",
+    "path": "/webhooks/unsubscribe/{token}/",
+    "operation_id": "webhooks_unsubscribe_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "token"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/webhooks/unsubscribe/{token}/",
+    "operation_id": "webhooks_unsubscribe_create",
+    "summary": "",
+    "description": "",
+    "parameters": [
+      "token"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/webhooks/unsubscribe/confirm/",
+    "operation_id": "webhooks_unsubscribe_confirm_retrieve",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  },
+  {
+    "method": "POST",
+    "path": "/webhooks/unsubscribe/confirm/",
+    "operation_id": "webhooks_unsubscribe_confirm_create",
+    "summary": "",
+    "description": "",
+    "parameters": []
+  }
+]

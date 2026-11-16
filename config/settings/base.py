@@ -31,6 +31,7 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = env.bool("USE_X_FORWARDED_HOST", default=True)
 USE_X_FORWARDED_PROTO = env.bool("USE_X_FORWARDED_PROTO", default=True)
 PUBLIC_BASE_URL = env("PUBLIC_BASE_URL", default="")
+FRONTEND_BASE_URL = env("FRONTEND_BASE_URL", default="https://marketing.fitverx.com")
 ALLOW_LOCAL_WEBHOOKS = env.bool("ALLOW_LOCAL_WEBHOOKS", default=False)
 ENABLE_TEST_DOUBLES = env.bool("ENABLE_TEST_DOUBLES", default=False)
 
