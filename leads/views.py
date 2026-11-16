@@ -170,6 +170,10 @@ class MetaConnectionStatusView(APIView):
         disconnect_meta_connection()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    def post(self, request):
+        disconnect_meta_connection()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class MetaReconnectView(APIView):
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin, IsEmailVerified]
@@ -207,6 +211,10 @@ class MetaDisconnectView(APIView):
         responses={204: None},
     )
     def delete(self, request):
+        disconnect_meta_connection()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def post(self, request):
         disconnect_meta_connection()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
