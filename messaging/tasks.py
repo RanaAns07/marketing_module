@@ -1,5 +1,6 @@
 from typing import Any
 from celery import shared_task
+from django.conf import settings
 from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
@@ -122,12 +123,17 @@ def dispatch_outbound_message_task(self, tenant_id: str, message_id: str) -> dic
                 headers=headers,
             )
         elif message.channel == Channel.SMS and isinstance(provider, SMSProvider):
+            public_base = str(getattr(settings, "PUBLIC_BASE_URL", "") or "").strip().rstrip("/")
+            status_url = f"{public_base}/webhooks/twilio/sms/status/" if public_base else ""
             send_result = provider.send(
                 to_phone=contact.phone or "",
                 body=message.body,
                 from_phone=connection.sender_identity,
+                status_callback_url=status_url,
             )
         elif message.channel == Channel.WHATSAPP and isinstance(provider, WhatsAppProvider):
+            public_base = str(getattr(settings, "PUBLIC_BASE_URL", "") or "").strip().rstrip("/")
+            status_url = f"{public_base}/webhooks/twilio/whatsapp/status/" if public_base else ""
             content_sid = str(
                 metadata.get("content_sid")
                 or (message.template.whatsapp_content_sid if message.template else "")
@@ -140,6 +146,7 @@ def dispatch_outbound_message_task(self, tenant_id: str, message_id: str) -> dic
                 content_sid=content_sid,
                 content_variables=content_vars if isinstance(content_vars, dict) else None,
                 from_phone=connection.sender_identity,
+                status_callback_url=status_url,
             )
         else:
             raise ProviderDispatchError(
