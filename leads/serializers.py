@@ -2,6 +2,7 @@ from rest_framework import serializers
 from contacts.models import Tag
 from contacts.serializers import TagSerializer
 from core.serializers import TenantScopedPrimaryKeyRelatedField, TenantScopedSerializer
+from integrations.providers.meta import REQUIRED_META_SCOPES
 from leads.models import MetaConnection, MetaLeadEvent, MetaLeadForm, MetaPage
 from leads.services import validate_form_field_mapping
 
@@ -23,6 +24,7 @@ class MetaOAuthCallbackSerializer(serializers.Serializer):
 
 class MetaConnectionSerializer(TenantScopedSerializer):
     is_token_configured = serializers.SerializerMethodField()
+    missing_scopes = serializers.SerializerMethodField()
 
     class Meta:
         model = MetaConnection
@@ -31,6 +33,8 @@ class MetaConnectionSerializer(TenantScopedSerializer):
             "meta_user_id",
             "meta_user_name",
             "status",
+            "scopes",
+            "missing_scopes",
             "token_expires_at",
             "is_token_configured",
             "last_checked_at",
@@ -42,6 +46,12 @@ class MetaConnectionSerializer(TenantScopedSerializer):
 
     def get_is_token_configured(self, obj: MetaConnection) -> bool:
         return bool(obj.user_access_token)
+
+    def get_missing_scopes(self, obj: MetaConnection) -> list[str]:
+        if obj.status == MetaConnection.Status.DISCONNECTED or not obj.user_access_token:
+            return []
+        granted = set(obj.scopes or [])
+        return [s for s in REQUIRED_META_SCOPES if s not in granted]
 
 
 class MetaPageSerializer(TenantScopedSerializer):

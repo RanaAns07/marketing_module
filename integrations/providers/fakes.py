@@ -9,7 +9,7 @@ from integrations.providers.base import (
     NormalizedMetaToken,
     ProviderSendResult,
 )
-from integrations.providers.meta import MetaGraphProvider
+from integrations.providers.meta import DEFAULT_META_SCOPES, MetaGraphProvider
 from integrations.providers.sendgrid import SendGridEmailProvider
 from integrations.providers.twilio import TwilioSMSProvider, TwilioWhatsAppProvider
 
@@ -100,7 +100,7 @@ class FakeMetaGraphProvider(MetaGraphProvider):
             meta_user_id="mock_meta_user_1",
             meta_user_name="Meta Business User",
             is_valid=True,
-            scopes=["leads_retrieval", "pages_manage_ads", "pages_show_list"],
+            scopes=list(DEFAULT_META_SCOPES),
         )
 
     def debug_token(self, access_token: str) -> NormalizedMetaToken:
@@ -109,6 +109,7 @@ class FakeMetaGraphProvider(MetaGraphProvider):
             expires_at=datetime.now(timezone.utc) + timedelta(days=45),
             meta_user_id="mock_meta_user_1",
             is_valid=True,
+            scopes=list(DEFAULT_META_SCOPES),
         )
 
     def get_subscribed_pages(self, user_access_token: str) -> list[NormalizedMetaPage]:

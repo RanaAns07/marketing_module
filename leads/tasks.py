@@ -3,46 +3,15 @@ from typing import Any
 from celery import shared_task
 from django.db import transaction
 from django.utils import timezone
-from accounts.models import Membership
 from core.context import TenantAwareTask, tenant_context
 from core.exceptions import ApplicationError
+from integrations.providers.meta import REQUIRED_META_SCOPES
 from integrations.providers.registry import (
     ProviderDispatchError,
     get_meta_provider,
 )
 from leads.models import MetaConnection, MetaLeadEvent
-from leads.services import ingest_fetched_meta_lead
-from notifications.models import NotificationType
-from notifications.services import notify
-
-
-def _notify_tenant_owners_and_admins(
-    tenant_id: str,
-    *,
-    title: str,
-    body: str,
-    extra_payload: dict[str, Any] | None = None,
-) -> None:
-    admin_ids = list(
-        Membership.objects.filter(
-            role__in=[Membership.Role.OWNER, Membership.Role.ADMIN],
-            is_active=True,
-        ).values_list("user_id", flat=True)
-    )
-    if not admin_ids:
-        return
-    payload = {
-        "title": title,
-        "body": body,
-        **(extra_payload or {}),
-    }
-    notify(
-        tenant=tenant_id,
-        users=admin_ids,
-        type=NotificationType.WORKFLOW_OR_INTEGRATION_ALERT,
-        payload=payload,
-        link="/settings/integrations/meta",
-    )
+from leads.services import _notify_tenant_owners_and_admins, ingest_fetched_meta_lead
 
 
 def _mark_lead_event_failed(
@@ -217,9 +186,16 @@ def check_meta_connections_health_beat_task() -> dict[str, int]:
                         token_info = provider.debug_token(locked.user_access_token)
                         if token_info.expires_at is not None:
                             locked.token_expires_at = token_info.expires_at
+                        locked.scopes = token_info.scopes or []
+                        granted = set(token_info.scopes or [])
+                        missing_scopes = [s for s in REQUIRED_META_SCOPES if s not in granted]
                         if not token_info.is_valid:
                             new_status = MetaConnection.Status.EXPIRED
                             error_msg = "Meta access token is no longer valid."
+                        elif missing_scopes:
+                            new_status = MetaConnection.Status.REAUTHORIZATION_REQUIRED
+                            missing_str = ", ".join(missing_scopes)
+                            error_msg = f"Missing required Facebook permissions: {missing_str}. Reauthorization required."
                         elif (
                             locked.token_expires_at is not None
                             and locked.token_expires_at <= expiry_threshold
@@ -235,7 +211,11 @@ def check_meta_connections_health_beat_task() -> dict[str, int]:
                 locked.last_error = error_msg
 
                 should_notify = False
-                if new_status in (MetaConnection.Status.EXPIRED, MetaConnection.Status.ERROR):
+                if new_status in (
+                    MetaConnection.Status.EXPIRED,
+                    MetaConnection.Status.ERROR,
+                    MetaConnection.Status.REAUTHORIZATION_REQUIRED,
+                ):
                     expired_count += 1
                     if locked.alert_notified_status != new_status:
                         should_notify = True
@@ -247,6 +227,7 @@ def check_meta_connections_health_beat_task() -> dict[str, int]:
                     update_fields=[
                         "token_expires_at",
                         "status",
+                        "scopes",
                         "last_checked_at",
                         "last_error",
                         "alert_notified_status",
@@ -262,6 +243,7 @@ def check_meta_connections_health_beat_task() -> dict[str, int]:
                         extra_payload={
                             "connection_id": str(locked.id),
                             "status": new_status,
+                            "missing_scopes": missing_scopes if new_status == MetaConnection.Status.REAUTHORIZATION_REQUIRED else [],
                         },
                     )
 

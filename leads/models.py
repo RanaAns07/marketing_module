@@ -8,6 +8,7 @@ class MetaConnection(TenantOwnedModel):
         CONNECTED = "connected", "Connected"
         EXPIRED = "expired", "Expired"
         ERROR = "error", "Error"
+        REAUTHORIZATION_REQUIRED = "reauthorization_required", "Reauthorization Required"
         DISCONNECTED = "disconnected", "Disconnected"
 
     user_access_token = EncryptedTextField(blank=True)
@@ -15,13 +16,14 @@ class MetaConnection(TenantOwnedModel):
     meta_user_id = models.CharField(max_length=128, blank=True)
     meta_user_name = models.CharField(max_length=255, blank=True)
     status = models.CharField(
-        max_length=20,
+        max_length=32,
         choices=Status.choices,
         default=Status.CONNECTED,
     )
+    scopes = models.JSONField(default=list, blank=True)
     last_checked_at = models.DateTimeField(null=True, blank=True)
     last_error = models.TextField(blank=True)
-    alert_notified_status = models.CharField(max_length=20, blank=True)
+    alert_notified_status = models.CharField(max_length=32, blank=True)
 
     class Meta:
         ordering = ["-created_at"]

@@ -7,12 +7,13 @@ from django.core import signing
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework import status
-from accounts.models import User
+from accounts.models import Membership, User
 from accounts.services import AssignmentService
 from contacts.models import Contact, CustomFieldDefinition, Tag
 from contacts.services import ContactService, normalize_phone_e164
 from core.context import require_tenant_id, tenant_context
 from core.exceptions import ApplicationError
+from integrations.providers.meta import REQUIRED_META_SCOPES
 from integrations.providers.registry import (
     NormalizedMetaLead,
     NormalizedMetaQuestion,
@@ -22,8 +23,38 @@ from integrations.providers.registry import (
 )
 from leads.models import MetaConnection, MetaLeadEvent, MetaLeadForm, MetaPage
 from leads.selectors import get_meta_connection
+from notifications.models import NotificationType
+from notifications.services import notify
 
 _META_OAUTH_SALT = "leads.meta.oauth.state"
+
+def _notify_tenant_owners_and_admins(
+    tenant_id: str,
+    *,
+    title: str,
+    body: str,
+    extra_payload: dict[str, Any] | None = None,
+) -> None:
+    admin_ids = list(
+        Membership.objects.filter(
+            role__in=[Membership.Role.OWNER, Membership.Role.ADMIN],
+            is_active=True,
+        ).values_list("user_id", flat=True)
+    )
+    if not admin_ids:
+        return
+    payload = {
+        "title": title,
+        "body": body,
+        **(extra_payload or {}),
+    }
+    notify(
+        tenant=tenant_id,
+        users=admin_ids,
+        type=NotificationType.WORKFLOW_OR_INTEGRATION_ALERT,
+        payload=payload,
+        link="/settings/integrations/meta",
+    )
 
 STANDARD_CONTACT_TARGET_FIELDS = frozenset(
     {
@@ -118,6 +149,21 @@ def complete_meta_oauth_callback(
             status_code=status.HTTP_502_BAD_GATEWAY,
         ) from exc
 
+    try:
+        debug_token_dto = provider.debug_token(token_dto.access_token)
+        granted_scopes = list(debug_token_dto.scopes if debug_token_dto and debug_token_dto.scopes else token_dto.scopes)
+    except Exception:
+        granted_scopes = list(token_dto.scopes)
+
+    missing_scopes = [s for s in REQUIRED_META_SCOPES if s not in set(granted_scopes)]
+    if missing_scopes:
+        conn_status = MetaConnection.Status.REAUTHORIZATION_REQUIRED
+        missing_str = ", ".join(missing_scopes)
+        error_msg = f"Missing required Facebook permissions: {missing_str}. Please reconnect your account."
+    else:
+        conn_status = MetaConnection.Status.CONNECTED
+        error_msg = ""
+
     now = timezone.now()
     with tenant_context(tenant_id):
         connection = MetaConnection.objects.select_for_update().first()
@@ -127,21 +173,51 @@ def complete_meta_oauth_callback(
                 token_expires_at=token_dto.expires_at,
                 meta_user_id=token_dto.meta_user_id,
                 meta_user_name=token_dto.meta_user_name,
-                status=MetaConnection.Status.CONNECTED,
+                status=conn_status,
+                scopes=granted_scopes,
                 last_checked_at=now,
-                last_error="",
-                alert_notified_status="",
+                last_error=error_msg,
+                alert_notified_status=conn_status if conn_status == MetaConnection.Status.REAUTHORIZATION_REQUIRED else "",
             )
+            if conn_status == MetaConnection.Status.REAUTHORIZATION_REQUIRED:
+                _notify_tenant_owners_and_admins(
+                    str(tenant_id),
+                    title="Meta Account Reconnection Required",
+                    body=error_msg,
+                    extra_payload={
+                        "connection_id": str(connection.id),
+                        "status": conn_status,
+                        "missing_scopes": missing_scopes,
+                    },
+                )
         else:
             connection.user_access_token = token_dto.access_token
             connection.token_expires_at = token_dto.expires_at
             connection.meta_user_id = token_dto.meta_user_id
             connection.meta_user_name = token_dto.meta_user_name
-            connection.status = MetaConnection.Status.CONNECTED
+            connection.status = conn_status
+            connection.scopes = granted_scopes
             connection.last_checked_at = now
-            connection.last_error = ""
-            connection.alert_notified_status = ""
+            connection.last_error = error_msg
+            should_notify = False
+            if conn_status == MetaConnection.Status.REAUTHORIZATION_REQUIRED:
+                if connection.alert_notified_status != conn_status:
+                    should_notify = True
+                    connection.alert_notified_status = conn_status
+            else:
+                connection.alert_notified_status = ""
             connection.save()
+            if should_notify:
+                _notify_tenant_owners_and_admins(
+                    str(tenant_id),
+                    title="Meta Account Reconnection Required",
+                    body=error_msg,
+                    extra_payload={
+                        "connection_id": str(connection.id),
+                        "status": conn_status,
+                        "missing_scopes": missing_scopes,
+                    },
+                )
 
         try:
             sync_meta_pages(connection=connection)
@@ -216,10 +292,30 @@ def select_meta_pages(*, page_identifiers: Iterable[str | uuid.UUID]) -> list[Me
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
-    provider = get_meta_provider()
+    if conn.status == MetaConnection.Status.REAUTHORIZATION_REQUIRED:
+        missing = [s for s in REQUIRED_META_SCOPES if s not in set(conn.scopes or [])]
+        missing_str = ", ".join(missing) if missing else "pages_manage_metadata"
+        raise ApplicationError(
+            detail=f"Meta account requires reauthorization before managing pages. Missing permissions: {missing_str}.",
+            code="meta_reauthorization_required",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
     all_pages = list(MetaPage.objects.select_for_update().filter(connection=conn))
     desired_keys = {str(item).strip() for item in page_identifiers if str(item).strip()}
+    pages_to_subscribe = [
+        p for p in all_pages
+        if ((str(p.id) in desired_keys) or (p.page_id in desired_keys)) and not p.subscribed
+    ]
+    granted_scopes = set(conn.scopes or [])
+    if pages_to_subscribe and "pages_manage_metadata" not in granted_scopes:
+        raise ApplicationError(
+            detail="Missing required Facebook permission 'pages_manage_metadata'. Reauthorization is required to subscribe pages to lead capture.",
+            code="meta_missing_scope_pages_manage_metadata",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
 
+    provider = get_meta_provider()
     for page in all_pages:
         should_select = (str(page.id) in desired_keys) or (page.page_id in desired_keys)
         if should_select:
@@ -228,6 +324,18 @@ def select_meta_pages(*, page_identifiers: Iterable[str | uuid.UUID]) -> list[Me
                     provider.subscribe_page(page.page_id, page.page_access_token)
                     page.subscribed = True
                 except ProviderDispatchError as exc:
+                    lower_msg = exc.message.lower()
+                    if (
+                        exc.status_code == 403
+                        or "permission" in lower_msg
+                        or "scope" in lower_msg
+                        or "pages_manage_metadata" in lower_msg
+                    ):
+                        raise ApplicationError(
+                            detail=f"Failed to subscribe page '{page.name}' to leadgen due to missing Facebook permissions: {exc.message}. Reauthorization is required.",
+                            code="meta_missing_scope_pages_manage_metadata",
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                        ) from exc
                     raise ApplicationError(
                         detail=f"Failed to subscribe page '{page.name}' to leadgen: {exc.message}",
                         code="meta_page_subscribe_failed",
@@ -543,6 +651,7 @@ def disconnect_meta_connection() -> MetaConnection | None:
     conn.user_access_token = ""
     conn.token_expires_at = None
     conn.status = MetaConnection.Status.DISCONNECTED
+    conn.scopes = []
     conn.last_error = ""
     conn.alert_notified_status = ""
     conn.save(
@@ -550,6 +659,7 @@ def disconnect_meta_connection() -> MetaConnection | None:
             "user_access_token",
             "token_expires_at",
             "status",
+            "scopes",
             "last_error",
             "alert_notified_status",
             "updated_at",

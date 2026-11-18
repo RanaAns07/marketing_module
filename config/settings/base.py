@@ -319,6 +319,13 @@ META_APP_SECRET = env("META_APP_SECRET", default="")
 META_WEBHOOK_VERIFY_TOKEN = env("META_WEBHOOK_VERIFY_TOKEN", default="")
 META_GRAPH_VERSION = env("META_GRAPH_VERSION", default="v20.0")
 META_OAUTH_REDIRECT_URI = env("META_OAUTH_REDIRECT_URI", default="")
+META_REQUIRED_SCOPES = [
+    "pages_show_list",
+    "pages_read_engagement",
+    "pages_manage_metadata",
+    "pages_manage_ads",
+    "leads_retrieval",
+]
 
 CORS_ALLOW_ALL_ORIGINS = env.bool("CORS_ALLOW_ALL_ORIGINS", default=True)
 CORS_ALLOW_CREDENTIALS = True

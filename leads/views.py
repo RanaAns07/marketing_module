@@ -151,6 +151,8 @@ class MetaConnectionStatusView(APIView):
                     "meta_user_id": "",
                     "meta_user_name": "",
                     "status": MetaConnection.Status.DISCONNECTED,
+                    "scopes": [],
+                    "missing_scopes": [],
                     "token_expires_at": None,
                     "is_token_configured": False,
                     "last_checked_at": None,

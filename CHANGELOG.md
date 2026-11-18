@@ -5,6 +5,12 @@ All notable changes to the Fitverx CRM backend platform are documented in this f
 ## [Unreleased] - 2026-11-16
 
 ### Added
+- **Meta OAuth Scopes & Permission Reauthorization**:
+  - Pinned Meta OAuth scopes to exactly `pages_show_list`, `pages_read_engagement`, `pages_manage_metadata`, `pages_manage_ads`, and `leads_retrieval` (`public_profile` implicit).
+  - Removed unused `ads_read` and `business_management` scopes.
+  - Added `scopes` JSON field and `reauthorization_required` status to `MetaConnection`.
+  - Added debug token inspection at connect time and periodic Celery beat health checks flagging missing scopes and notifying owners/admins.
+  - Enhanced page selection and subscription to return clear `meta_missing_scope_pages_manage_metadata` or `meta_reauthorization_required` errors instead of generic 502 failures.
 - **Email Verification**:
   - Added `email_verified` and `email_verified_at` to the `User` model.
   - Registration automatically dispatches signed 24-hour verification emails via platform transactional email configuration.

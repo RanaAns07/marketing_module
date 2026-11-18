@@ -18,14 +18,20 @@ from integrations.providers.base import (
     ProviderDispatchError,
 )
 
-DEFAULT_META_SCOPES = (
-    "pages_show_list",
-    "pages_read_engagement",
-    "pages_manage_ads",
-    "leads_retrieval",
-    "ads_read",
-    "business_management",
+REQUIRED_META_SCOPES = tuple(
+    getattr(
+        settings,
+        "META_REQUIRED_SCOPES",
+        (
+            "pages_show_list",
+            "pages_read_engagement",
+            "pages_manage_metadata",
+            "pages_manage_ads",
+            "leads_retrieval",
+        ),
+    )
 )
+DEFAULT_META_SCOPES = REQUIRED_META_SCOPES
 
 
 def _get_header_case_insensitive(headers: Mapping[str, str], target: str) -> str:
@@ -236,12 +242,14 @@ class MetaGraphProvider(MetaLeadAdsProvider):
             access_token=long_token,
             params={"fields": "id,name"},
         )
+        debug_info = self.debug_token(long_token)
         return NormalizedMetaToken(
             access_token=long_token,
-            expires_at=expires_at,
-            meta_user_id=str(me_res.get("id") or ""),
+            expires_at=debug_info.expires_at or expires_at,
+            meta_user_id=str(me_res.get("id") or debug_info.meta_user_id),
             meta_user_name=str(me_res.get("name") or ""),
             is_valid=True,
+            scopes=debug_info.scopes,
         )
 
     def debug_token(self, access_token: str) -> NormalizedMetaToken:
