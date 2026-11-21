@@ -114,6 +114,10 @@ class TenantAPIKey(TenantOwnedModel):
         CONTACTS_WRITE = "contacts:write", "Contacts Write"
         APPOINTMENTS_WRITE = "appointments:write", "Appointments Write"
         WEBHOOKS_MANAGE = "webhooks:manage", "Webhooks Manage"
+        PACKAGES_READ = "packages:read", "Packages Read"
+        PACKAGES_WRITE = "packages:write", "Packages Write"
+        LANDING_PAGES_READ = "landing_pages:read", "Landing Pages Read"
+        LANDING_PAGES_WRITE = "landing_pages:write", "Landing Pages Write"
 
     name = models.CharField(max_length=120)
     key_id = models.CharField(max_length=64, unique=True, db_index=True)

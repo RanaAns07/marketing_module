@@ -24,4 +24,7 @@ urlpatterns = [
     path("api/v1/external/", include("webhooks.external_urls")),
     path("webhooks/", include(("webhooks.urls", "webhooks"), namespace="public-webhooks")),
     path("api/v1/leads/", include("leads.urls")),
+    path("api/v1/packages/", include("packages.urls")),
+    path("api/v1/landing-pages/", include("landing_pages.urls")),
+    path("api/v1/public/", include("landing_pages.public_urls")),
 ]

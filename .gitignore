@@ -224,5 +224,5 @@ __marimo__/
 CRM_Product_Feature_Guide_and_User_Manual.pdf
 *.pdf
 docs/frontend/
-docs/qa
+docs/
 tests/acceptance

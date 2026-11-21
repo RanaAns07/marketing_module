@@ -301,6 +301,19 @@ def _extract_purchase_custom_fields(
     fields: dict[str, Any] = {}
     if isinstance(data.get("custom_fields"), dict):
         fields.update(data["custom_fields"])
+    pkg_ref = data.get("package_id") or data.get("package_external_id")
+    if pkg_ref:
+        try:
+            from packages.selectors import get_package_by_external_id_or_id
+            pkg = get_package_by_external_id_or_id(str(pkg_ref))
+            if pkg is not None:
+                fields.setdefault("package", pkg.name)
+                fields.setdefault("amount", float(pkg.price))
+                fields.setdefault("currency", pkg.currency)
+                fields["package_id"] = str(pkg.id)
+                fields["package_external_id"] = pkg.external_id
+        except Exception:
+            pass
     for key in ("package", "plan", "amount", "currency"):
         if key in data and data[key] is not None:
             fields[key] = data[key]
@@ -437,6 +450,33 @@ def _handle_subscription_cancelled(
 
     return {
         "handler": "subscription.cancelled",
+        "custom_fields_updated": list(custom_updates.keys()),
+        "tags_added": [t.name for t in added_tags],
+        "converted_at_preserved": contact.converted_at.isoformat() if contact.converted_at else None,
+    }
+
+
+def _handle_subscription_expired(
+    *,
+    contact: Contact,
+    event: ExternalEvent,
+    data: dict[str, Any],
+) -> dict[str, Any]:
+    custom_updates: dict[str, Any] = dict(data.get("custom_fields") or {})
+    for key in ("package", "plan", "cancellation_reason", "reason", "expiration_reason"):
+        if key in data and data[key] is not None:
+            custom_updates[key] = data[key]
+    custom_updates["subscription_status"] = "expired"
+    custom_updates["expired_at"] = str(data.get("expired_at") or event.occurred_at.isoformat())
+    ContactService.update_contact(contact=contact, custom_fields=custom_updates)
+
+    tags_to_add = list(data.get("tags") or [])
+    if "Subscription Expired" not in tags_to_add:
+        tags_to_add.append("Subscription Expired")
+    added_tags = ContactService.add_tags(contact=contact, tags=tags_to_add, create_missing=True)
+
+    return {
+        "handler": "subscription.expired",
         "custom_fields_updated": list(custom_updates.keys()),
         "tags_added": [t.name for t in added_tags],
         "converted_at_preserved": contact.converted_at.isoformat() if contact.converted_at else None,
@@ -704,6 +744,7 @@ EXTERNAL_EVENT_HANDLERS: dict[str, Callable[..., dict[str, Any]]] = {
     "subscription.updated": _handle_subscription_updated,
     "subscription.renewed": _handle_subscription_renewed,
     "subscription.cancelled": _handle_subscription_cancelled,
+    "subscription.expired": _handle_subscription_expired,
     "payment.succeeded": _handle_payment_succeeded,
     "payment.failed": _handle_payment_failed,
     "refund.issued": _handle_refund_issued,

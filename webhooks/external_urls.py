@@ -1,4 +1,9 @@
 from django.urls import path
+from packages.external_views import (
+    ExternalPackageBulkSyncView,
+    ExternalPackageDetailView,
+    ExternalPackageUpsertView,
+)
 from webhooks.views import (
     ExternalAppointmentCreateView,
     ExternalAppointmentUpdateView,
@@ -38,5 +43,20 @@ urlpatterns = [
         "events/",
         ExternalEventIngestView.as_view(),
         name="external-event-ingest",
+    ),
+    path(
+        "packages/sync/",
+        ExternalPackageBulkSyncView.as_view(),
+        name="external-package-bulk-sync",
+    ),
+    path(
+        "packages/",
+        ExternalPackageUpsertView.as_view(),
+        name="external-package-upsert",
+    ),
+    path(
+        "packages/<str:external_id_or_id>/",
+        ExternalPackageDetailView.as_view(),
+        name="external-package-detail",
     ),
 ]

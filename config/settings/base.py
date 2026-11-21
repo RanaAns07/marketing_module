@@ -67,6 +67,8 @@ LOCAL_APPS = [
     "reports.apps.ReportsConfig",
     "webhooks.apps.WebhooksConfig",
     "leads.apps.LeadsConfig",
+    "packages.apps.PackagesConfig",
+    "landing_pages.apps.LandingPagesConfig",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -171,6 +173,7 @@ REST_FRAMEWORK = {
         "auth_forgot": env("THROTTLE_RATE_AUTH_FORGOT", default="10/minute"),
         "auth_resend": env("THROTTLE_RATE_AUTH_RESEND", default="5/minute"),
         "auth_accept": env("THROTTLE_RATE_AUTH_ACCEPT", default="15/minute"),
+        "landing_page_submission": env("THROTTLE_RATE_LANDING_PAGE_SUBMISSION", default="30/minute"),
     },
 }
 
@@ -221,6 +224,11 @@ SPECTACULAR_SETTINGS = {
         "WhatsAppCategoryEnum": "messaging.models.WhatsAppCategory",
         "MessageDirectionEnum": "messaging.models.Message.Direction",
         "UsageDirectionEnum": "usage.models.Direction",
+        "PackageStatusEnum": "packages.models.Package.Status",
+        "LandingPageStatusEnum": "landing_pages.models.LandingPage.Status",
+        "LandingPageSectionTypeEnum": "landing_pages.models.LandingPageSection.SectionType",
+        "LandingPageFormSuccessActionEnum": "landing_pages.models.LandingPageForm.SuccessAction",
+        "PackageBillingIntervalEnum": "packages.models.Package.BillingInterval",
     },
 }
 
