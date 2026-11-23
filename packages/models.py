@@ -5,6 +5,7 @@ from core.models import TenantOwnedModel
 class Package(TenantOwnedModel):
     class BillingInterval(models.TextChoices):
         ONE_TIME = "one_time", "One-Time"
+        WEEKLY = "weekly", "Weekly"
         MONTHLY = "monthly", "Monthly"
         QUARTERLY = "quarterly", "Quarterly"
         BIANNUAL = "biannual", "Bi-Annual"
