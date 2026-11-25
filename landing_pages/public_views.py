@@ -187,6 +187,30 @@ class PublicLandingPageView(APIView):
                 "redirect_url": f.redirect_url,
             }
 
+        theme_cfg = dict(page.theme_config or {})
+        if page.tenant and isinstance(page.tenant.settings, dict):
+            tenant_branding = (
+                page.tenant.settings.get("branding")
+                or page.tenant.settings.get("brand_colors")
+                or page.tenant.settings.get("theme")
+                or {}
+            )
+            if tenant_branding:
+                theme_cfg.setdefault("brand_colors", tenant_branding)
+                if isinstance(tenant_branding, dict):
+                    if "primary" in tenant_branding:
+                        theme_cfg.setdefault("primary_color", tenant_branding["primary"])
+                    elif "primary_color" in tenant_branding:
+                        theme_cfg.setdefault("primary_color", tenant_branding["primary_color"])
+
+        if not theme_cfg.get("primary_color") and not theme_cfg.get("color"):
+            for sec in visible_sections:
+                sec_c = (sec.content or {}).get("color")
+                if sec_c:
+                    theme_cfg.setdefault("primary_color", sec_c)
+                    theme_cfg.setdefault("color", sec_c)
+                    break
+
         response_payload = {
             "id": page.id,
             "title": page.title,
@@ -195,7 +219,7 @@ class PublicLandingPageView(APIView):
             "seo_description": page.seo_description,
             "og_image_url": page.og_image_url,
             "favicon_url": page.favicon_url,
-            "theme_config": page.theme_config or {},
+            "theme_config": theme_cfg,
             "settings": page.settings or {},
             "sections": sections_data,
             "form": form_data,
