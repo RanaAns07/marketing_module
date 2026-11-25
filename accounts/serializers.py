@@ -4,6 +4,11 @@ from core.models import Tenant
 
 
 class TenantSummarySerializer(serializers.ModelSerializer):
+    brand_colors = serializers.DictField(required=False)
+    logo_url = serializers.CharField(required=False, allow_blank=True)
+    icon_url = serializers.CharField(required=False, allow_blank=True)
+    primary_color = serializers.CharField(required=False, allow_blank=True)
+
     class Meta:
         model = Tenant
         fields = [
@@ -21,10 +26,72 @@ class TenantSummarySerializer(serializers.ModelSerializer):
             "assignment_strategy",
             "handoff_add_interested_tag",
             "settings",
+            "brand_colors",
+            "logo_url",
+            "icon_url",
+            "primary_color",
             "created_at",
             "updated_at",
         ]
         read_only_fields = ["id", "slug", "created_at", "updated_at", "deactivated_at", "grace_period_ends_at", "deactivation_reason"]
+
+    def to_representation(self, instance: Tenant) -> dict:
+        data = super().to_representation(instance)
+        settings_dict = instance.settings or {}
+        if not isinstance(settings_dict, dict):
+            settings_dict = {}
+
+        branding = settings_dict.get("brand_colors") or settings_dict.get("branding") or {}
+        if not isinstance(branding, dict):
+            branding = {}
+
+        data["brand_colors"] = branding
+        data["logo_url"] = (
+            settings_dict.get("logo_url")
+            or settings_dict.get("logo")
+            or branding.get("logo_url")
+            or branding.get("logo")
+            or ""
+        )
+        data["icon_url"] = (
+            settings_dict.get("icon_url")
+            or settings_dict.get("icon")
+            or branding.get("icon_url")
+            or branding.get("icon")
+            or ""
+        )
+        data["primary_color"] = (
+            branding.get("primary")
+            or branding.get("primary_color")
+            or settings_dict.get("primary_color")
+            or ""
+        )
+        return data
+
+    def to_internal_value(self, data: dict) -> dict:
+        validated = super().to_internal_value(data)
+        settings_dict = dict(validated.get("settings") or {})
+
+        brand_colors = data.get("brand_colors")
+        if brand_colors is not None and isinstance(brand_colors, dict):
+            settings_dict["brand_colors"] = brand_colors
+
+        logo_url = data.get("logo_url")
+        if logo_url is not None:
+            settings_dict["logo_url"] = str(logo_url).strip()
+
+        icon_url = data.get("icon_url")
+        if icon_url is not None:
+            settings_dict["icon_url"] = str(icon_url).strip()
+
+        primary_color = data.get("primary_color")
+        if primary_color is not None:
+            settings_dict["primary_color"] = str(primary_color).strip()
+
+        if settings_dict:
+            validated["settings"] = settings_dict
+
+        return validated
 
 
 class UserSerializer(serializers.ModelSerializer):

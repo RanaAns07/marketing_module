@@ -1847,7 +1847,12 @@ def update_tenant_settings(*, tenant: Tenant, **changes: Any) -> Tenant:
     update_fields = ["updated_at"]
     for key, value in changes.items():
         if key in allowed_fields and value is not None:
-            setattr(tenant, key, value)
+            if key == "settings" and isinstance(value, dict) and isinstance(tenant.settings, dict):
+                merged_settings = dict(tenant.settings)
+                merged_settings.update(value)
+                setattr(tenant, key, merged_settings)
+            else:
+                setattr(tenant, key, value)
             if key not in update_fields:
                 update_fields.append(key)
 
