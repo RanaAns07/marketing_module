@@ -249,11 +249,36 @@ def logout_all_user_sessions(user: User) -> None:
 @transaction.atomic
 def create_tenant_invitation(
     *,
-    tenant: Tenant,
+    tenant: Tenant | None = None,
     email: str,
     role: str,
-    invited_by: User,
+    invited_by: User | None = None,
+    actor_membership: Membership | None = None,
 ) -> TenantInvitation:
+    if actor_membership is not None:
+        if actor_membership.role not in (Membership.Role.OWNER, Membership.Role.ADMIN):
+            raise ApplicationError(
+                detail="You do not have permission to invite team members.",
+                code="permission_denied",
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+        if role == Membership.Role.OWNER and actor_membership.role != Membership.Role.OWNER:
+            raise ApplicationError(
+                detail="Only workspace owners can invite another owner.",
+                code="permission_denied",
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+        tenant = actor_membership.tenant
+        invited_by = actor_membership.user
+    elif tenant is None:
+        tenant = require_tenant()
+
+    if invited_by is None:
+        raise ApplicationError(
+            detail="Inviting user is required.",
+            code="inviting_user_required",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
     norm_email = email.lower().strip()
     if not norm_email:
         raise ApplicationError(
@@ -321,7 +346,34 @@ def create_tenant_invitation(
 
 
 @transaction.atomic
-def resend_tenant_invitation(*, invitation: TenantInvitation) -> TenantInvitation:
+def resend_tenant_invitation(
+    *,
+    invitation: TenantInvitation | None = None,
+    invitation_id: uuid.UUID | str | None = None,
+    actor_membership: Membership | None = None,
+) -> TenantInvitation:
+    if invitation is None and invitation_id is not None:
+        invitation = get_tenant_invitation_by_id(invitation_id)
+        if invitation is None:
+            raise ApplicationError(
+                detail="Invitation not found.",
+                code="invitation_not_found",
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+    if invitation is None:
+        raise ApplicationError(
+            detail="Invitation is required.",
+            code="invitation_required",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if actor_membership is not None and actor_membership.role not in (Membership.Role.OWNER, Membership.Role.ADMIN):
+        raise ApplicationError(
+            detail="You do not have permission to resend invitations.",
+            code="permission_denied",
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+
     if invitation.status != TenantInvitation.Status.PENDING:
         raise ApplicationError(
             detail="Cannot resend an invitation that is not pending.",
@@ -347,7 +399,34 @@ def resend_tenant_invitation(*, invitation: TenantInvitation) -> TenantInvitatio
 
 
 @transaction.atomic
-def revoke_tenant_invitation(*, invitation: TenantInvitation) -> TenantInvitation:
+def revoke_tenant_invitation(
+    *,
+    invitation: TenantInvitation | None = None,
+    invitation_id: uuid.UUID | str | None = None,
+    actor_membership: Membership | None = None,
+) -> TenantInvitation:
+    if invitation is None and invitation_id is not None:
+        invitation = get_tenant_invitation_by_id(invitation_id)
+        if invitation is None:
+            raise ApplicationError(
+                detail="Invitation not found.",
+                code="invitation_not_found",
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+    if invitation is None:
+        raise ApplicationError(
+            detail="Invitation is required.",
+            code="invitation_required",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if actor_membership is not None and actor_membership.role not in (Membership.Role.OWNER, Membership.Role.ADMIN):
+        raise ApplicationError(
+            detail="You do not have permission to revoke invitations.",
+            code="permission_denied",
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+
     if invitation.status != TenantInvitation.Status.PENDING:
         raise ApplicationError(
             detail="Cannot revoke an invitation that is not pending.",
@@ -1001,10 +1080,17 @@ def add_team_member(
     is_available: bool = True,
     email_notifications_enabled: bool = True,
 ) -> Membership:
-    if actor_membership.role != Membership.Role.OWNER:
+    if actor_membership.role not in (Membership.Role.OWNER, Membership.Role.ADMIN):
         raise ApplicationError(
-            detail="Direct member creation is restricted to Business Owners. Please use the invitation flow.",
-            code="invitation_required",
+            detail="You do not have permission to add team members.",
+            code="permission_denied",
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+
+    if role == Membership.Role.OWNER and actor_membership.role != Membership.Role.OWNER:
+        raise ApplicationError(
+            detail="Only workspace owners can assign the Owner role.",
+            code="permission_denied",
             status_code=status.HTTP_403_FORBIDDEN,
         )
 
@@ -1073,6 +1159,44 @@ def add_team_member(
         is_available=is_available,
         email_notifications_enabled=email_notifications_enabled,
     )
+
+    if not password:
+        try:
+            invite_token = signing.dumps(
+                {
+                    "tenant_id": str(tenant.id),
+                    "email": normalized_email,
+                    "role": role,
+                    "nonce": secrets.token_hex(8),
+                },
+                salt=_INVITE_SALT,
+            )
+            expires_at = timezone.now() + timedelta(days=7)
+            TenantInvitation.objects.update_or_create(
+                tenant=tenant,
+                email=normalized_email,
+                defaults={
+                    "role": role,
+                    "invited_by": actor_membership.user,
+                    "token": invite_token,
+                    "expires_at": expires_at,
+                    "status": TenantInvitation.Status.PENDING,
+                },
+            )
+            base_url = _get_platform_base_url()
+            accept_url = f"{base_url}/invite/accept?token={invite_token}"
+            subject = f"You have been invited to join {tenant.name}"
+            body = (
+                f"Hi there,\n\n"
+                f"{actor_membership.user.full_name or 'An administrator'} has invited you to join '{tenant.name}' as a {role.capitalize()}.\n\n"
+                f"Click the link below to accept your invitation and access your account:\n\n"
+                f"{accept_url}\n\n"
+                f"This invitation link expires in 7 days."
+            )
+            send_platform_email(to_email=normalized_email, subject=subject, body=body)
+        except Exception:
+            pass
+
     return Membership.objects.select_related("user", "tenant").get(pk=membership.pk)
 
 

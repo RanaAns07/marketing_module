@@ -493,14 +493,19 @@ class TeamMemberViewSet(viewsets.ModelViewSet):
         return member
 
     def create(self, request, *args, **kwargs):
-        if request.membership.role != Membership.Role.OWNER:
+        if request.membership.role not in (Membership.Role.OWNER, Membership.Role.ADMIN):
             raise ApplicationError(
-                message="Only tenant owners can add members directly. Admins must invite members.",
-                code="invitation_required",
+                message="Only workspace owners and administrators can add team members.",
+                code="permission_denied",
             )
         serializer = AddTeamMemberSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+        if data.get("role") == Membership.Role.OWNER and request.membership.role != Membership.Role.OWNER:
+            raise ApplicationError(
+                message="Only workspace owners can assign the Owner role.",
+                code="permission_denied",
+            )
         membership = add_team_member(
             actor_membership=request.membership,
             email=data["email"],
