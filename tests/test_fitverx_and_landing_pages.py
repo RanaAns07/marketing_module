@@ -352,3 +352,47 @@ class FitverxAndLandingPagesAuditTests(TestCase):
         self.assertIn("openapi: 3.0.3", output)
         self.assertIn("PackageStatusEnum", output)
         self.assertIn("LandingPageStatusEnum", output)
+
+    def test_template_placeholders_tenant_name_and_assigned_to(self):
+        from messaging.services import render_template_placeholders
+
+        staff_user = User.objects.create_user(
+            email=f"staff_{uuid.uuid4().hex[:6]}@test.com",
+            first_name="John",
+            last_name="Coach",
+            password="Password123!",
+        )
+        staff_membership = Membership.objects.create(
+            tenant=self.tenant_a,
+            user=staff_user,
+            role=Membership.Role.STAFF,
+        )
+
+        contact = Contact.objects.create(
+            tenant=self.tenant_a,
+            first_name="Jane",
+            last_name="Doe",
+            email="jane@example.com",
+            assigned_to=staff_membership,
+        )
+
+        tpl = "Hi {{first_name}}, welcome to {{tenant_name}}! Your coach is {{assigned_to}} (gym: {{gym_name}})."
+        rendered = render_template_placeholders(tpl, contact)
+        self.assertEqual(
+            rendered,
+            f"Hi Jane, welcome to {self.tenant_a.name}! Your coach is John Coach (gym: {self.tenant_a.name}).",
+        )
+
+        contact_unassigned = Contact.objects.create(
+            tenant=self.tenant_a,
+            first_name="Bob",
+            last_name="Smith",
+            email="bob@example.com",
+            assigned_to=None,
+        )
+        tpl_unassigned = "Hello {{first_name}}, from {{tenant_name}}, assigned to '{{assigned_to}}'."
+        rendered_unassigned = render_template_placeholders(tpl_unassigned, contact_unassigned)
+        self.assertEqual(
+            rendered_unassigned,
+            f"Hello Bob, from {self.tenant_a.name}, assigned to ''.",
+        )

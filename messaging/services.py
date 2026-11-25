@@ -204,6 +204,31 @@ def build_contact_placeholder_map(
     contact: Contact,
     extra_context: dict[str, Any] | None = None,
 ) -> dict[str, str]:
+    tenant_name = ""
+    try:
+        if getattr(contact, "tenant", None):
+            tenant_name = contact.tenant.name or ""
+        elif getattr(contact, "tenant_id", None):
+            from core.models import Tenant
+            tenant_obj = Tenant.objects.filter(pk=contact.tenant_id).only("name").first()
+            if tenant_obj:
+                tenant_name = tenant_obj.name or ""
+    except Exception:
+        tenant_name = ""
+
+    assigned_to_name = ""
+    assigned_to_email = ""
+    try:
+        membership = getattr(contact, "assigned_to", None)
+        if membership:
+            user = getattr(membership, "user", None)
+            if user:
+                assigned_to_name = (user.full_name or user.first_name or user.email or "").strip()
+                assigned_to_email = (user.email or "").strip()
+    except Exception:
+        assigned_to_name = ""
+        assigned_to_email = ""
+
     values: dict[str, str] = {
         "first_name": contact.first_name or "",
         "last_name": contact.last_name or "",
@@ -220,22 +245,39 @@ def build_contact_placeholder_map(
         "campaign": contact.campaign or "",
         "ad_set": contact.ad_set or "",
         "ad": contact.ad or "",
+        "tenant_name": tenant_name,
+        "tenant": tenant_name,
+        "gym_name": tenant_name,
+        "business_name": tenant_name,
+        "company_name": tenant_name,
+        "tenant.name": tenant_name,
+        "assigned_to": assigned_to_name,
+        "assigned_to_name": assigned_to_name,
+        "assignee": assigned_to_name,
+        "assignee_name": assigned_to_name,
+        "assigned_to.name": assigned_to_name,
+        "assigned_to.full_name": assigned_to_name,
+        "assigned_to_email": assigned_to_email,
+        "assigned_to.email": assigned_to_email,
     }
 
-    next_appt = (
-        Appointment.objects.filter(
-            contact=contact,
-            status__in=[Appointment.Status.BOOKED, Appointment.Status.RESCHEDULED],
+    try:
+        next_appt = (
+            Appointment.objects.filter(
+                contact=contact,
+                status__in=[Appointment.Status.BOOKED, Appointment.Status.RESCHEDULED],
+            )
+            .order_by("starts_at")
+            .first()
         )
-        .order_by("starts_at")
-        .first()
-    )
-    if next_appt is not None:
-        iso_dt = next_appt.starts_at.strftime("%Y-%m-%d %H:%M UTC")
-        values["appointment_date"] = iso_dt
-        values["appointment_time"] = next_appt.starts_at.strftime("%H:%M UTC")
-        values["appointment_location"] = next_appt.location or ""
-        values["starts_at"] = iso_dt
+        if next_appt is not None:
+            iso_dt = next_appt.starts_at.strftime("%Y-%m-%d %H:%M UTC")
+            values["appointment_date"] = iso_dt
+            values["appointment_time"] = next_appt.starts_at.strftime("%H:%M UTC")
+            values["appointment_location"] = next_appt.location or ""
+            values["starts_at"] = iso_dt
+    except Exception:
+        pass
 
     custom_data = contact.custom_fields or {}
     if isinstance(custom_data, dict):
@@ -245,10 +287,13 @@ def build_contact_placeholder_map(
                 values[str(k)] = str_val
                 values[_normalize_var_key(str(k))] = str_val
 
-        definitions = CustomFieldDefinition.objects.filter(tenant_id=contact.tenant_id)
-        for defn in definitions:
-            if defn.key in custom_data and custom_data[defn.key] is not None:
-                values[_normalize_var_key(defn.label)] = str(custom_data[defn.key])
+        try:
+            definitions = CustomFieldDefinition.objects.filter(tenant_id=contact.tenant_id)
+            for defn in definitions:
+                if defn.key in custom_data and custom_data[defn.key] is not None:
+                    values[_normalize_var_key(defn.label)] = str(custom_data[defn.key])
+        except Exception:
+            pass
 
     if extra_context:
         for k, v in extra_context.items():
