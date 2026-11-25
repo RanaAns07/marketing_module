@@ -1,5 +1,6 @@
+import re
 from collections.abc import Mapping
-from datetime import datetime, time as dt_time, timedelta
+from datetime import date as dt_date, datetime, time as dt_time, timedelta
 from decimal import Decimal
 from typing import Any
 import zoneinfo
@@ -7,7 +8,7 @@ from django.conf import settings
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncDate, TruncWeek
 from django.utils import timezone
-from django.utils.dateparse import parse_date
+from django.utils.dateparse import parse_date, parse_datetime
 from accounts.models import Membership
 from automation.models import StepExecution, Workflow, WorkflowEnrollment
 from contacts.models import Activity, Contact, LeadStatus, Tag
@@ -40,6 +41,23 @@ def resolve_tenant_timezone(tenant_tz_name: str | None = None) -> zoneinfo.ZoneI
         return zoneinfo.ZoneInfo("UTC")
 
 
+def _robust_parse_date(raw: Any) -> dt_date | None:
+    if not raw:
+        return None
+    val_str = str(raw).strip()
+    d = parse_date(val_str)
+    if d:
+        return d
+    dt = parse_datetime(val_str)
+    if dt:
+        return dt.date()
+    if len(val_str) >= 10:
+        d = parse_date(val_str[:10])
+        if d:
+            return d
+    return None
+
+
 def parse_date_range(
     params: Mapping[str, Any] | None = None,
     tenant_tz_name: str | None = None,
@@ -48,14 +66,43 @@ def parse_date_range(
     now_local = timezone.now().astimezone(tz)
     today_local = now_local.date()
 
-    params_dict = params or {}
-    preset = str(params_dict.get("preset") or params_dict.get("range") or "").strip().lower()
-    start_str = params_dict.get("start_date") or params_dict.get("from_date")
-    end_str = params_dict.get("end_date") or params_dict.get("to_date")
+    params_dict = dict(params or {})
+    raw_preset = (
+        params_dict.get("preset")
+        or params_dict.get("range")
+        or params_dict.get("period")
+        or params_dict.get("filter")
+        or params_dict.get("timeframe")
+        or params_dict.get("date_range")
+        or ""
+    )
+    if not raw_preset and params_dict.get("days"):
+        raw_preset = str(params_dict.get("days"))
+
+    preset = str(raw_preset).strip().lower().replace("-", "_").replace(" ", "_")
+
+    start_str = (
+        params_dict.get("start_date")
+        or params_dict.get("from_date")
+        or params_dict.get("startDate")
+        or params_dict.get("fromDate")
+        or params_dict.get("start")
+        or params_dict.get("from")
+        or params_dict.get("date_from")
+    )
+    end_str = (
+        params_dict.get("end_date")
+        or params_dict.get("to_date")
+        or params_dict.get("endDate")
+        or params_dict.get("toDate")
+        or params_dict.get("end")
+        or params_dict.get("to")
+        or params_dict.get("date_to")
+    )
 
     if start_str and end_str:
-        s_date = parse_date(str(start_str).strip())
-        e_date = parse_date(str(end_str).strip())
+        s_date = _robust_parse_date(start_str)
+        e_date = _robust_parse_date(end_str)
         if s_date and e_date:
             start_local = datetime.combine(s_date, dt_time.min, tzinfo=tz)
             end_local = datetime.combine(e_date, dt_time.max, tzinfo=tz)
@@ -65,7 +112,7 @@ def parse_date_range(
                 "custom",
             )
 
-    if preset == "today":
+    if preset in ("today", "1d", "1_day", "1day"):
         start_local = datetime.combine(today_local, dt_time.min, tzinfo=tz)
         end_local = datetime.combine(today_local, dt_time.max, tzinfo=tz)
         return (
@@ -74,7 +121,7 @@ def parse_date_range(
             "today",
         )
 
-    if preset == "yesterday":
+    if preset in ("yesterday",):
         y_date = today_local - timedelta(days=1)
         start_local = datetime.combine(y_date, dt_time.min, tzinfo=tz)
         end_local = datetime.combine(y_date, dt_time.max, tzinfo=tz)
@@ -84,17 +131,7 @@ def parse_date_range(
             "yesterday",
         )
 
-    if preset == "last_7_days":
-        start_date = today_local - timedelta(days=6)
-        start_local = datetime.combine(start_date, dt_time.min, tzinfo=tz)
-        end_local = datetime.combine(today_local, dt_time.max, tzinfo=tz)
-        return (
-            start_local.astimezone(zoneinfo.ZoneInfo("UTC")),
-            end_local.astimezone(zoneinfo.ZoneInfo("UTC")),
-            "last_7_days",
-        )
-
-    if preset == "this_month":
+    if preset in ("this_month", "current_month"):
         start_date = datetime(today_local.year, today_local.month, 1, 0, 0, 0, tzinfo=tz)
         end_local = datetime.combine(today_local, dt_time.max, tzinfo=tz)
         return (
@@ -103,7 +140,7 @@ def parse_date_range(
             "this_month",
         )
 
-    if preset == "last_month":
+    if preset in ("last_month", "previous_month"):
         first_of_this_month = datetime(today_local.year, today_local.month, 1, 0, 0, 0, tzinfo=tz)
         end_of_last_month = first_of_this_month - timedelta(microseconds=1)
         start_of_last_month = datetime(end_of_last_month.year, end_of_last_month.month, 1, 0, 0, 0, tzinfo=tz)
@@ -112,6 +149,39 @@ def parse_date_range(
             end_of_last_month.astimezone(zoneinfo.ZoneInfo("UTC")),
             "last_month",
         )
+
+    if preset in ("quarter", "this_quarter", "last_quarter", "3_months", "3months"):
+        start_date = today_local - timedelta(days=89)
+        start_local = datetime.combine(start_date, dt_time.min, tzinfo=tz)
+        end_local = datetime.combine(today_local, dt_time.max, tzinfo=tz)
+        return (
+            start_local.astimezone(zoneinfo.ZoneInfo("UTC")),
+            end_local.astimezone(zoneinfo.ZoneInfo("UTC")),
+            "last_90_days",
+        )
+
+    if preset in ("year", "this_year", "1_year", "1y", "12_months", "12months"):
+        start_date = today_local - timedelta(days=364)
+        start_local = datetime.combine(start_date, dt_time.min, tzinfo=tz)
+        end_local = datetime.combine(today_local, dt_time.max, tzinfo=tz)
+        return (
+            start_local.astimezone(zoneinfo.ZoneInfo("UTC")),
+            end_local.astimezone(zoneinfo.ZoneInfo("UTC")),
+            "last_365_days",
+        )
+
+    m = re.match(r"^(?:last_?)?(\d+)(?:_?days?|_?d)?$", preset)
+    if m:
+        n_days = int(m.group(1))
+        if n_days > 0:
+            start_date = today_local - timedelta(days=n_days - 1)
+            start_local = datetime.combine(start_date, dt_time.min, tzinfo=tz)
+            end_local = datetime.combine(today_local, dt_time.max, tzinfo=tz)
+            return (
+                start_local.astimezone(zoneinfo.ZoneInfo("UTC")),
+                end_local.astimezone(zoneinfo.ZoneInfo("UTC")),
+                f"last_{n_days}_days",
+            )
 
     start_date = today_local - timedelta(days=29)
     start_local = datetime.combine(start_date, dt_time.min, tzinfo=tz)

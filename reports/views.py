@@ -31,7 +31,7 @@ class LeadAcquisitionReportView(APIView):
 
     @extend_schema(
         parameters=[
-            OpenApiParameter(name="preset", type=str, location=OpenApiParameter.QUERY, required=False, description="today, yesterday, last_7_days, last_30_days, this_month, last_month"),
+            OpenApiParameter(name="preset", type=str, location=OpenApiParameter.QUERY, required=False, description="today, yesterday, last_7_days, last_14_days, last_30_days, last_90_days, this_month, last_month"),
             OpenApiParameter(name="start_date", type=str, location=OpenApiParameter.QUERY, required=False, description="YYYY-MM-DD"),
             OpenApiParameter(name="end_date", type=str, location=OpenApiParameter.QUERY, required=False, description="YYYY-MM-DD"),
             OpenApiParameter(name="bucket", type=str, location=OpenApiParameter.QUERY, required=False, description="day or week"),
