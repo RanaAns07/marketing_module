@@ -204,6 +204,20 @@ class PublicLandingPageView(APIView):
 
         return Response(response_payload, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        operation_id="public_landing_page_direct_submit",
+        summary="Submit lead capture form on a landing page",
+        request=PublicFormSubmitSerializer,
+        responses={200: PublicFormSubmitResponseSerializer},
+    )
+    def post(self, request, slug_or_id: str, tenant_slug_or_id: str | None = None):
+        submit_view = PublicFormSubmitView()
+        return submit_view.post(
+            request,
+            slug_or_id=slug_or_id,
+            tenant_slug_or_id=tenant_slug_or_id,
+        )
+
 
 class PublicFormSubmitView(APIView):
     authentication_classes = []
@@ -340,6 +354,15 @@ class TenantPublicLandingPageView(PublicLandingPageView):
     )
     def get(self, request, slug_or_id: str, tenant_slug_or_id: str | None = None):
         return super().get(request, slug_or_id=slug_or_id, tenant_slug_or_id=tenant_slug_or_id)
+
+    @extend_schema(
+        operation_id="public_tenant_landing_page_direct_submit",
+        summary="Submit lead capture form directly on the tenant landing page URL",
+        request=PublicFormSubmitSerializer,
+        responses={200: PublicFormSubmitResponseSerializer},
+    )
+    def post(self, request, slug_or_id: str, tenant_slug_or_id: str | None = None):
+        return super().post(request, slug_or_id=slug_or_id, tenant_slug_or_id=tenant_slug_or_id)
 
 
 class TenantPublicFormSubmitView(PublicFormSubmitView):

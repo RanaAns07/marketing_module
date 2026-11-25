@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import re_path
 from landing_pages.public_views import (
     DirectFormSubmitView,
     PublicFormSubmitView,
@@ -8,28 +8,28 @@ from landing_pages.public_views import (
 )
 
 urlpatterns = [
-    path(
-        "pages/<str:tenant_slug_or_id>/<str:slug_or_id>/submit/",
+    re_path(
+        r"^pages/(?P<tenant_slug_or_id>[^/]+)/(?P<slug_or_id>[^/]+)/submit/?$",
         TenantPublicFormSubmitView.as_view(),
         name="public-landing-page-tenant-submit",
     ),
-    path(
-        "pages/<str:tenant_slug_or_id>/<str:slug_or_id>/",
-        TenantPublicLandingPageView.as_view(),
-        name="public-landing-page-tenant-detail",
-    ),
-    path(
-        "pages/<str:slug_or_id>/submit/",
+    re_path(
+        r"^pages/(?P<slug_or_id>[^/]+)/submit/?$",
         PublicFormSubmitView.as_view(),
         name="public-landing-page-submit",
     ),
-    path(
-        "pages/<str:slug_or_id>/",
+    re_path(
+        r"^pages/(?P<tenant_slug_or_id>[^/]+)/(?P<slug_or_id>[^/]+)/?$",
+        TenantPublicLandingPageView.as_view(),
+        name="public-landing-page-tenant-detail",
+    ),
+    re_path(
+        r"^pages/(?P<slug_or_id>[^/]+)/?$",
         PublicLandingPageView.as_view(),
         name="public-landing-page-detail",
     ),
-    path(
-        "forms/<str:form_id>/submit/",
+    re_path(
+        r"^forms/(?P<form_id>[^/]+)/submit/?$",
         DirectFormSubmitView.as_view(),
         name="public-form-submit",
     ),
