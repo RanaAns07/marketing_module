@@ -211,6 +211,8 @@ class PublicLandingPageSerializer(serializers.Serializer):
     seo_description = serializers.CharField()
     og_image_url = serializers.URLField(allow_blank=True)
     favicon_url = serializers.URLField(allow_blank=True)
+    logo_url = serializers.CharField(allow_blank=True, required=False, default="")
+    icon_url = serializers.CharField(allow_blank=True, required=False, default="")
     theme_config = serializers.DictField()
     settings = serializers.DictField()
     sections = PublicSectionSerializer(many=True)

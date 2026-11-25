@@ -188,6 +188,17 @@ class PublicLandingPageView(APIView):
             }
 
         theme_cfg = dict(page.theme_config or {})
+        logo_url = ""
+        icon_url = str(page.favicon_url or "").strip()
+
+        if isinstance(page.settings, dict):
+            logo_url = page.settings.get("logo_url") or page.settings.get("logo") or ""
+            icon_url = icon_url or page.settings.get("icon_url") or page.settings.get("icon") or ""
+
+        if not logo_url and isinstance(page.theme_config, dict):
+            logo_url = page.theme_config.get("logo_url") or page.theme_config.get("logo") or ""
+            icon_url = icon_url or page.theme_config.get("icon_url") or page.theme_config.get("icon") or ""
+
         if page.tenant and isinstance(page.tenant.settings, dict):
             tenant_branding = (
                 page.tenant.settings.get("branding")
@@ -202,6 +213,37 @@ class PublicLandingPageView(APIView):
                         theme_cfg.setdefault("primary_color", tenant_branding["primary"])
                     elif "primary_color" in tenant_branding:
                         theme_cfg.setdefault("primary_color", tenant_branding["primary_color"])
+                    if not logo_url:
+                        logo_url = tenant_branding.get("logo_url") or tenant_branding.get("logo") or ""
+                    if not icon_url:
+                        icon_url = tenant_branding.get("icon_url") or tenant_branding.get("icon") or ""
+
+            if not logo_url:
+                logo_url = page.tenant.settings.get("logo_url") or page.tenant.settings.get("logo") or ""
+            if not icon_url:
+                icon_url = page.tenant.settings.get("icon_url") or page.tenant.settings.get("icon") or ""
+
+        if not logo_url:
+            for sec in visible_sections:
+                sec_content = sec.content or {}
+                if isinstance(sec_content, dict):
+                    cand = (
+                        sec_content.get("logo_url")
+                        or sec_content.get("logo")
+                        or sec_content.get("logo_image")
+                        or sec_content.get("brand_logo")
+                    )
+                    if cand:
+                        logo_url = str(cand).strip()
+                        break
+
+        if not icon_url:
+            icon_url = logo_url
+
+        theme_cfg["logo_url"] = logo_url
+        theme_cfg["icon_url"] = icon_url
+        theme_cfg["logo"] = logo_url
+        theme_cfg["icon"] = icon_url
 
         if not theme_cfg.get("primary_color") and not theme_cfg.get("color"):
             for sec in visible_sections:
@@ -219,6 +261,8 @@ class PublicLandingPageView(APIView):
             "seo_description": page.seo_description,
             "og_image_url": page.og_image_url,
             "favicon_url": page.favicon_url,
+            "logo_url": logo_url,
+            "icon_url": icon_url,
             "theme_config": theme_cfg,
             "settings": page.settings or {},
             "sections": sections_data,
