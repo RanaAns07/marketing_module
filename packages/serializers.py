@@ -48,6 +48,11 @@ class PackageSyncItemSerializer(serializers.Serializer):
 
 class BulkPackageSyncSerializer(serializers.Serializer):
     packages = serializers.ListField(child=PackageSyncItemSerializer(), allow_empty=False)
+    brand_colors = serializers.DictField(required=False)
+    branding = serializers.DictField(required=False)
+    logo_url = serializers.CharField(required=False, allow_blank=True)
+    icon_url = serializers.CharField(required=False, allow_blank=True)
+    settings = serializers.DictField(required=False)
 
 
 class PackageSyncResponseSerializer(serializers.Serializer):

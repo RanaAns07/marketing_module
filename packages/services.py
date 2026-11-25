@@ -109,7 +109,36 @@ def upsert_package_from_external(
 
 
 @transaction.atomic
-def bulk_sync_packages(items: list[dict[str, Any]]) -> dict[str, Any]:
+def bulk_sync_packages(
+    items: list[dict[str, Any]],
+    *,
+    branding: dict[str, Any] | None = None,
+    brand_colors: dict[str, Any] | None = None,
+    logo_url: str | None = None,
+    icon_url: str | None = None,
+    settings: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    tenant_id = require_tenant_id()
+    if any([branding, brand_colors, logo_url, icon_url, settings]):
+        from core.models import Tenant
+        tenant = Tenant.objects.filter(pk=tenant_id).first()
+        if tenant:
+            t_settings = dict(tenant.settings or {})
+            if isinstance(settings, dict):
+                t_settings.update(settings)
+            if isinstance(brand_colors, dict):
+                t_settings["brand_colors"] = brand_colors
+            elif isinstance(branding, dict):
+                t_settings["branding"] = branding
+                if "brand_colors" not in t_settings and ("primary" in branding or "primary_color" in branding):
+                    t_settings["brand_colors"] = branding
+            if logo_url:
+                t_settings["logo_url"] = str(logo_url).strip()
+            if icon_url:
+                t_settings["icon_url"] = str(icon_url).strip()
+            tenant.settings = t_settings
+            tenant.save(update_fields=["settings", "updated_at"])
+
     created_count = 0
     updated_count = 0
     synced_packages: list[Package] = []

@@ -83,7 +83,14 @@ class ExternalPackageBulkSyncView(BaseExternalPackageAPIView):
     def post(self, request):
         serializer = BulkPackageSyncSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        result = bulk_sync_packages(serializer.validated_data["packages"])
+        result = bulk_sync_packages(
+            serializer.validated_data["packages"],
+            branding=serializer.validated_data.get("branding"),
+            brand_colors=serializer.validated_data.get("brand_colors"),
+            logo_url=serializer.validated_data.get("logo_url"),
+            icon_url=serializer.validated_data.get("icon_url"),
+            settings=serializer.validated_data.get("settings"),
+        )
         return Response(
             {
                 "status": "success",
