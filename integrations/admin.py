@@ -1,9 +1,10 @@
 from django.contrib import admin
+from core.admin import UnscopedTenantModelAdmin
 from integrations.models import ChannelConnection, InboundWebhookEvent
 
 
 @admin.register(ChannelConnection)
-class ChannelConnectionAdmin(admin.ModelAdmin):
+class ChannelConnectionAdmin(UnscopedTenantModelAdmin):
     list_display = (
         "id",
         "tenant",
@@ -23,7 +24,7 @@ class ChannelConnectionAdmin(admin.ModelAdmin):
 
 
 @admin.register(InboundWebhookEvent)
-class InboundWebhookEventAdmin(admin.ModelAdmin):
+class InboundWebhookEventAdmin(UnscopedTenantModelAdmin):
     list_display = (
         "id",
         "tenant",

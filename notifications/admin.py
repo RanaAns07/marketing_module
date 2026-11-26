@@ -1,9 +1,10 @@
 from django.contrib import admin
+from core.admin import UnscopedTenantModelAdmin
 from notifications.models import Notification
 
 
 @admin.register(Notification)
-class NotificationAdmin(admin.ModelAdmin):
+class NotificationAdmin(UnscopedTenantModelAdmin):
     list_display = ("notification_type", "recipient", "tenant", "title", "is_read", "email_sent", "created_at")
     list_filter = ("notification_type", "is_read", "email_sent")
     search_fields = ("title", "recipient__email", "tenant__name")

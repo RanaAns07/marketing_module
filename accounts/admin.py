@@ -1,5 +1,6 @@
 from django.contrib import admin
 from accounts.models import Membership, TenantAPIKey, TenantInvitation, User
+from core.admin import UnscopedTenantModelAdmin
 
 admin.site.site_header = "Fitverx CRM Administration"
 admin.site.site_title = "Fitverx CRM Admin Portal"
@@ -14,7 +15,7 @@ class UserAdmin(admin.ModelAdmin):
 
 
 @admin.register(Membership)
-class MembershipAdmin(admin.ModelAdmin):
+class MembershipAdmin(UnscopedTenantModelAdmin):
     list_display = ("user", "tenant", "role", "is_active", "is_available", "created_at")
     list_filter = ("role", "is_active", "is_available")
     search_fields = ("user__email", "tenant__name")
@@ -24,7 +25,7 @@ class MembershipAdmin(admin.ModelAdmin):
 
 
 @admin.register(TenantInvitation)
-class TenantInvitationAdmin(admin.ModelAdmin):
+class TenantInvitationAdmin(UnscopedTenantModelAdmin):
     list_display = ("email", "tenant", "role", "status", "expires_at", "created_at")
     list_filter = ("status", "role")
     search_fields = ("email", "tenant__name")
@@ -34,7 +35,7 @@ class TenantInvitationAdmin(admin.ModelAdmin):
 
 
 @admin.register(TenantAPIKey)
-class TenantAPIKeyAdmin(admin.ModelAdmin):
+class TenantAPIKeyAdmin(UnscopedTenantModelAdmin):
     list_display = ("name", "key_id", "tenant", "scopes", "is_active", "last_used_at", "revoked_at", "created_at")
     list_filter = ("is_active",)
     search_fields = ("name", "key_id", "tenant__name")

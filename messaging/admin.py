@@ -1,9 +1,10 @@
 from django.contrib import admin
+from core.admin import UnscopedTenantModelAdmin
 from messaging.models import Broadcast, Message, MessageTemplate
 
 
 @admin.register(MessageTemplate)
-class MessageTemplateAdmin(admin.ModelAdmin):
+class MessageTemplateAdmin(UnscopedTenantModelAdmin):
     list_display = (
         "id",
         "tenant",
@@ -23,7 +24,7 @@ class MessageTemplateAdmin(admin.ModelAdmin):
 
 
 @admin.register(Broadcast)
-class BroadcastAdmin(admin.ModelAdmin):
+class BroadcastAdmin(UnscopedTenantModelAdmin):
     list_display = (
         "id",
         "tenant",
@@ -46,7 +47,7 @@ class BroadcastAdmin(admin.ModelAdmin):
 
 
 @admin.register(Message)
-class MessageAdmin(admin.ModelAdmin):
+class MessageAdmin(UnscopedTenantModelAdmin):
     list_display = (
         "id",
         "tenant",

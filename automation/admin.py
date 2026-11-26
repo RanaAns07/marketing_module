@@ -1,9 +1,10 @@
 from django.contrib import admin
 from automation.models import StepExecution, Workflow, WorkflowEnrollment, WorkflowStep
+from core.admin import UnscopedTenantModelAdmin
 
 
 @admin.register(Workflow)
-class WorkflowAdmin(admin.ModelAdmin):
+class WorkflowAdmin(UnscopedTenantModelAdmin):
     list_display = (
         "id",
         "tenant",
@@ -25,7 +26,7 @@ class WorkflowAdmin(admin.ModelAdmin):
 
 
 @admin.register(WorkflowStep)
-class WorkflowStepAdmin(admin.ModelAdmin):
+class WorkflowStepAdmin(UnscopedTenantModelAdmin):
     list_display = (
         "id",
         "tenant",
@@ -47,7 +48,7 @@ class WorkflowStepAdmin(admin.ModelAdmin):
 
 
 @admin.register(WorkflowEnrollment)
-class WorkflowEnrollmentAdmin(admin.ModelAdmin):
+class WorkflowEnrollmentAdmin(UnscopedTenantModelAdmin):
     list_display = (
         "id",
         "tenant",
@@ -70,7 +71,7 @@ class WorkflowEnrollmentAdmin(admin.ModelAdmin):
 
 
 @admin.register(StepExecution)
-class StepExecutionAdmin(admin.ModelAdmin):
+class StepExecutionAdmin(UnscopedTenantModelAdmin):
     list_display = (
         "id",
         "tenant",

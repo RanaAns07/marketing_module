@@ -1,9 +1,10 @@
 from django.contrib import admin
+from core.admin import UnscopedTenantModelAdmin
 from leads.models import MetaConnection, MetaLeadEvent, MetaLeadForm, MetaPage
 
 
 @admin.register(MetaConnection)
-class MetaConnectionAdmin(admin.ModelAdmin):
+class MetaConnectionAdmin(UnscopedTenantModelAdmin):
     list_display = (
         "id",
         "tenant",
@@ -23,7 +24,7 @@ class MetaConnectionAdmin(admin.ModelAdmin):
 
 
 @admin.register(MetaPage)
-class MetaPageAdmin(admin.ModelAdmin):
+class MetaPageAdmin(UnscopedTenantModelAdmin):
     list_display = (
         "id",
         "tenant",
@@ -42,7 +43,7 @@ class MetaPageAdmin(admin.ModelAdmin):
 
 
 @admin.register(MetaLeadForm)
-class MetaLeadFormAdmin(admin.ModelAdmin):
+class MetaLeadFormAdmin(UnscopedTenantModelAdmin):
     list_display = (
         "id",
         "tenant",
@@ -63,7 +64,7 @@ class MetaLeadFormAdmin(admin.ModelAdmin):
 
 
 @admin.register(MetaLeadEvent)
-class MetaLeadEventAdmin(admin.ModelAdmin):
+class MetaLeadEventAdmin(UnscopedTenantModelAdmin):
     list_display = (
         "id",
         "tenant",

@@ -1,9 +1,10 @@
 from django.contrib import admin
+from core.admin import UnscopedTenantModelAdmin
 from inbox.models import AssignmentRule, Conversation, ConversationNote
 
 
 @admin.register(Conversation)
-class ConversationAdmin(admin.ModelAdmin):
+class ConversationAdmin(UnscopedTenantModelAdmin):
     list_display = (
         "id",
         "tenant",
@@ -34,7 +35,7 @@ class ConversationAdmin(admin.ModelAdmin):
 
 
 @admin.register(ConversationNote)
-class ConversationNoteAdmin(admin.ModelAdmin):
+class ConversationNoteAdmin(UnscopedTenantModelAdmin):
     list_display = (
         "id",
         "tenant",
@@ -54,7 +55,7 @@ class ConversationNoteAdmin(admin.ModelAdmin):
 
 
 @admin.register(AssignmentRule)
-class AssignmentRuleAdmin(admin.ModelAdmin):
+class AssignmentRuleAdmin(UnscopedTenantModelAdmin):
     list_display = (
         "id",
         "tenant",

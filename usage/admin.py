@@ -1,9 +1,10 @@
 from django.contrib import admin
+from core.admin import UnscopedTenantModelAdmin
 from usage.models import RateCard, UsageRecord
 
 
 @admin.register(UsageRecord)
-class UsageRecordAdmin(admin.ModelAdmin):
+class UsageRecordAdmin(UnscopedTenantModelAdmin):
     list_display = (
         "id",
         "tenant",
@@ -27,7 +28,7 @@ class UsageRecordAdmin(admin.ModelAdmin):
 
 
 @admin.register(RateCard)
-class RateCardAdmin(admin.ModelAdmin):
+class RateCardAdmin(UnscopedTenantModelAdmin):
     list_display = (
         "id",
         "tenant",

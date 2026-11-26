@@ -1,9 +1,10 @@
 from django.contrib import admin
+from core.admin import UnscopedTenantModelAdmin
 from webhooks.models import ExternalEvent, WebhookDelivery, WebhookEndpoint
 
 
 @admin.register(ExternalEvent)
-class ExternalEventAdmin(admin.ModelAdmin):
+class ExternalEventAdmin(UnscopedTenantModelAdmin):
     list_display = (
         "id",
         "tenant",
@@ -27,7 +28,7 @@ class ExternalEventAdmin(admin.ModelAdmin):
 
 
 @admin.register(WebhookEndpoint)
-class WebhookEndpointAdmin(admin.ModelAdmin):
+class WebhookEndpointAdmin(UnscopedTenantModelAdmin):
     list_display = (
         "id",
         "tenant",
@@ -49,7 +50,7 @@ class WebhookEndpointAdmin(admin.ModelAdmin):
 
 
 @admin.register(WebhookDelivery)
-class WebhookDeliveryAdmin(admin.ModelAdmin):
+class WebhookDeliveryAdmin(UnscopedTenantModelAdmin):
     list_display = (
         "id",
         "tenant",

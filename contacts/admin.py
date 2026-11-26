@@ -1,4 +1,5 @@
 from django.contrib import admin
+from core.admin import UnscopedTenantModelAdmin
 from contacts.models import (
     Activity,
     Appointment,
@@ -12,7 +13,7 @@ from contacts.models import (
 
 
 @admin.register(LeadStatus)
-class LeadStatusAdmin(admin.ModelAdmin):
+class LeadStatusAdmin(UnscopedTenantModelAdmin):
     list_display = ("name", "tenant", "order", "is_default", "created_at")
     list_filter = ("is_default",)
     search_fields = ("name", "tenant__name")
@@ -22,7 +23,7 @@ class LeadStatusAdmin(admin.ModelAdmin):
 
 
 @admin.register(CustomFieldDefinition)
-class CustomFieldDefinitionAdmin(admin.ModelAdmin):
+class CustomFieldDefinitionAdmin(UnscopedTenantModelAdmin):
     list_display = ("label", "key", "field_type", "is_required", "tenant", "created_at")
     list_filter = ("field_type", "is_required")
     search_fields = ("label", "key", "tenant__name")
@@ -32,7 +33,7 @@ class CustomFieldDefinitionAdmin(admin.ModelAdmin):
 
 
 @admin.register(Tag)
-class TagAdmin(admin.ModelAdmin):
+class TagAdmin(UnscopedTenantModelAdmin):
     list_display = ("name", "color", "tenant", "created_at")
     search_fields = ("name", "tenant__name")
 
@@ -41,7 +42,7 @@ class TagAdmin(admin.ModelAdmin):
 
 
 @admin.register(Contact)
-class ContactAdmin(admin.ModelAdmin):
+class ContactAdmin(UnscopedTenantModelAdmin):
     list_display = (
         "full_name",
         "email",
@@ -60,7 +61,7 @@ class ContactAdmin(admin.ModelAdmin):
 
 
 @admin.register(ContactTag)
-class ContactTagAdmin(admin.ModelAdmin):
+class ContactTagAdmin(UnscopedTenantModelAdmin):
     list_display = ("contact", "tag", "tenant", "created_at")
     search_fields = ("contact__full_name", "tag__name", "tenant__name")
 
@@ -69,7 +70,7 @@ class ContactTagAdmin(admin.ModelAdmin):
 
 
 @admin.register(Activity)
-class ActivityAdmin(admin.ModelAdmin):
+class ActivityAdmin(UnscopedTenantModelAdmin):
     list_display = ("activity_type", "contact", "actor", "tenant", "created_at")
     list_filter = ("activity_type",)
     search_fields = ("description", "contact__full_name", "tenant__name")
@@ -79,7 +80,7 @@ class ActivityAdmin(admin.ModelAdmin):
 
 
 @admin.register(Appointment)
-class AppointmentAdmin(admin.ModelAdmin):
+class AppointmentAdmin(UnscopedTenantModelAdmin):
     list_display = ("contact", "starts_at", "status", "location", "tenant", "created_at")
     list_filter = ("status",)
     search_fields = ("contact__full_name", "location", "external_ref", "tenant__name")
@@ -89,7 +90,7 @@ class AppointmentAdmin(admin.ModelAdmin):
 
 
 @admin.register(Task)
-class TaskAdmin(admin.ModelAdmin):
+class TaskAdmin(UnscopedTenantModelAdmin):
     list_display = ("title", "contact", "assignee", "status", "due_at", "from_workflow", "tenant")
     list_filter = ("status", "from_workflow")
     search_fields = ("title", "description", "tenant__name")
